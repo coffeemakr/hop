@@ -15,11 +15,6 @@ var (
 	Years  = IntervalUnit("years")
 )
 
-type User struct {
-	Id   int64
-	Name string
-}
-
 type TaskExecution struct {
 	ID         string
 	ExecutorId int64
@@ -49,6 +44,6 @@ func NewTask(name string, intervalType IntervalUnit, interval uint32) *Task {
 
 func (t Task) String() string {
 	return fmt.Sprintf(
-		"Task{ ID=%s, Name=%s, IntervalUnit=%s, Interval=%d, LastExecutionId=%s }",
-		t.ID, t.Name, t.IntervalUnit, t.Interval, t.LastExecutionId)
+		"Task{ ID=%s, Name=%s, IntervalUnit=%s, Interval=%d, LastExecution=%s }",
+		t.ID, t.Name, t.IntervalUnit, t.Interval, t.LastExecution)
 }

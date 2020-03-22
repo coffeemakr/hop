@@ -11,7 +11,7 @@ require (
 	github.com/spf13/viper v1.6.2 // indirect
 	github.com/vmihailenco/msgpack/v4 v4.3.10 // indirect
 	go.mongodb.org/mongo-driver v1.3.1
-	golang.org/x/crypto v0.0.0-20200311171314-f7b00557c8c4 // indirect
+	golang.org/x/crypto v0.0.0-20200311171314-f7b00557c8c4
 	gopkg.in/square/go-jose.v2 v2.4.1
 )
 

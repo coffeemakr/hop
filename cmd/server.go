@@ -37,6 +37,8 @@ func runServer() error {
 	addr := getServerAddress()
 	log.Printf("Starting server at %s\n", addr)
 	router := mux.NewRouter()
+	router.HandleFunc("/login", handlers.LoginUser).Methods("POST")
+	router.HandleFunc("/register", handlers.RegisterUser).Methods("POST")
 	router.HandleFunc("/tasks", handlers.GetTasks).Methods("GET")
 	router.HandleFunc("/tasks", handlers.CreateTask).Methods("POST")
 	router.HandleFunc("/tasks/execution", handlers.CreateTaskExecution).Methods("POST")

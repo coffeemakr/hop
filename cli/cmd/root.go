@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/spf13/cobra"
+	"net/http"
 	"os"
 )
 
@@ -10,8 +11,14 @@ var rootCommand = &cobra.Command{
 	Use:"wedo",
 }
 
+var client *Client
+
 func init() {
-	rootCommand.AddCommand(doneCommand, addCommand)
+	rootCommand.AddCommand(doneCommand, addCommand, loginCommand, registerCommand)
+	client = &Client{
+		BaseUrl: "http://localhost:8080",
+		Client:  &http.Client{},
+	}
 }
 
 func Execute() {

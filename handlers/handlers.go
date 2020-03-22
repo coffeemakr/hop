@@ -8,16 +8,33 @@ import (
 	"github.com/coffeemakr/wedo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 	"math/rand"
 	"net/http"
 )
 
-var taskCollection *mongo.Collection
-var ErrInvalidJsonBody = http_error.ErrBadRequest.WithDescription("Invalid JSON body")
+var (
+	taskCollection     *mongo.Collection
+	usersCollection    *mongo.Collection
+	ErrInvalidJsonBody = http_error.ErrBadRequest.WithDescription("Invalid JSON body")
+)
 
 func SetDB(db *mongo.Database) {
 	taskCollection = db.Collection("tasks")
+	usersCollection = db.Collection("users")
+
+
+	_, err := usersCollection.Indexes().CreateOne(context.TODO(), mongo.IndexModel{
+		Keys:    bson.M{
+			"name": 1,
+		},
+		Options: options.Index().SetName("user_name").SetUnique(true),
+	})
+
+	if err != nil {
+		log.Fatal("create", err)
+	}
 }
 
 func writeJson(w http.ResponseWriter, value interface{}) (err error) {
