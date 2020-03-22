@@ -17,7 +17,7 @@ type JwtTokenVerifier struct {
 	KeySet *jose.JSONWebKeySet
 }
 
-func (v *JwtTokenVerifier) verifyToken(rawToken string) (*wedo.DecodedToken, error) {
+func (v *JwtTokenVerifier) VerifyToken(rawToken string) (*wedo.DecodedToken, error) {
 	var claims jwt.Claims
 	var result wedo.DecodedToken
 	token, err := jwt.ParseSigned(rawToken)

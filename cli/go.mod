@@ -3,6 +3,7 @@ module github.com/coffeemakr/wedo/cli
 go 1.14
 
 require (
+	github.com/coffeemakr/go-http-error v1.0.0
 	github.com/coffeemakr/wedo v0.0.0
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/mitchellh/mapstructure v1.2.2 // indirect

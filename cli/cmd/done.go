@@ -8,5 +8,5 @@ var doneCommand = &cobra.Command{
 }
 
 func runFinishTask(cmd *cobra.Command, args []string) error {
-	return nil;
+	return nil
 }

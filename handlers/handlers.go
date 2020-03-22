@@ -17,16 +17,16 @@ import (
 var (
 	taskCollection     *mongo.Collection
 	usersCollection    *mongo.Collection
+	groupsCollection   *mongo.Collection
 	ErrInvalidJsonBody = http_error.ErrBadRequest.WithDescription("Invalid JSON body")
 )
 
 func SetDB(db *mongo.Database) {
 	taskCollection = db.Collection("tasks")
 	usersCollection = db.Collection("users")
-
-
+	groupsCollection = db.Collection("groups")
 	_, err := usersCollection.Indexes().CreateOne(context.TODO(), mongo.IndexModel{
-		Keys:    bson.M{
+		Keys: bson.M{
 			"name": 1,
 		},
 		Options: options.Index().SetName("user_name").SetUnique(true),
@@ -73,8 +73,7 @@ func GetTasks(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
-var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-")
 
 func RandStringRunes(n int) string {
 	b := make([]rune, n)
@@ -83,7 +82,6 @@ func RandStringRunes(n int) string {
 	}
 	return string(b)
 }
-
 
 func generateId() string {
 	return RandStringRunes(32)
@@ -95,22 +93,25 @@ func createTask(ctx context.Context, task *wedo.Task) (err error) {
 	return
 }
 
-
 func CreateTask(w http.ResponseWriter, r *http.Request) {
 	var task wedo.Task
 	var ctx = r.Context()
+	var userID, err = GetUserNameFromRequest(r)
+	if err != nil {
+		panic(err)
+	}
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
 		ErrInvalidJsonBody.Cause(err).Write(w, r)
 		return
 	}
 	task.LastExecution = nil
-
+	task.CreatorName = userID
 	if err := createTask(ctx, &task); err != nil {
 		http_error.ErrInternalServerError.Causef("Failed to create task: %s", err).Write(w, r)
 		return
 	}
 	if err := writeJson(w, task); err != nil {
-		http_error.ErrInternalServerError.Causef("Failed to write response %s", err).Write(w, r)
+		http_error.ErrInternalServerError.Causef("Failed to write response: %s", err).Write(w, r)
 	}
 }
 
