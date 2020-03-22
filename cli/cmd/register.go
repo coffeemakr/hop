@@ -62,8 +62,11 @@ func runRegister(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	err = client.Register(request)
+	user, err := client.Register(request)
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	log.Printf("Registred user: %s\n", user)
+
 }

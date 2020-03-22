@@ -4,8 +4,12 @@ import (
 	"context"
 	"github.com/coffeemakr/wedo/handlers"
 	"github.com/gorilla/mux"
+	"github.com/square/go-jose/v3"
+	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -46,7 +50,32 @@ func runServer() error {
 	return http.ListenAndServe(addr, router)
 }
 
+func loadPrivateKey() (*jose.JSONWebKey, error) {
+	var key jose.JSONWebKey
+	fp, err := os.Open("jwk-sig-priv.json")
+	if err != nil {
+		return nil, err
+	}
+	b, err := ioutil.ReadAll(fp)
+	if err != nil {
+		return nil, err
+	}
+	err = key.UnmarshalJSON(b)
+	if err != nil {
+		return nil, err
+	}
+	return &key, nil
+}
+
 func main() {
+	rand.Seed(time.Now().UTC().UnixNano())
+	key, err := loadPrivateKey()
+	if err != nil {
+		log.Fatal(err)
+	}
+	handlers.UsedTokenIssuer = &handlers.JwtTokenIssuer{
+		PrivateKey: key,
+	}
 	client, err := mongo.NewClient(options.Client().ApplyURI("mongodb://wedo:secret@localhost:27017"))
 	if err != nil {
 		log.Fatal(err)
@@ -58,7 +87,6 @@ func main() {
 	}
 	db := client.Database("wedo")
 	handlers.SetDB(db)
-
 
 	log.Fatal(rootCmd.Execute())
 }

@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	http_error "github.com/coffeemakr/go-http-error"
+	httperrors "github.com/coffeemakr/go-http-error"
 	"github.com/coffeemakr/wedo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -16,15 +16,16 @@ import (
 
 var (
 	bcryptCost                = bcrypt.DefaultCost
-	HttpErrPasswordsDontMatch = http_error.ErrBadRequest.WithDescription("Passwords don't match")
-	HttpErrInvalidCredentials = http_error.NewHttpErrorType(http.StatusUnauthorized, "Invalid credentials")
-	ErrNoSucUser              = errors.New("No such user")
+	HttpErrPasswordsDontMatch = httperrors.ErrBadRequest.WithDescription("Passwords don't match")
+	HttpErrInvalidCredentials = httperrors.NewHttpErrorType(http.StatusUnauthorized, "Invalid credentials")
+	ErrNoSucUser              = errors.New("no such user")
 )
 
 const userFieldName = "name"
 
 func LoginUser(w http.ResponseWriter, r *http.Request) {
 	var user *wedo.User
+	var result *wedo.AuthenticationResult
 	var credentials wedo.Credentials
 	var ctx = r.Context()
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
@@ -39,13 +40,25 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		if err == ErrNoSucUser {
 			HttpErrInvalidCredentials.Cause(err).Write(w, r)
 		} else {
-			http_error.ErrInternalServerError.Causef("Failed to get user: %s", err).Write(w, r)
+			httperrors.ErrInternalServerError.Causef("Failed to get user: %s", err).Write(w, r)
 		}
 		return
 	}
 
-	if err := writeJson(w, user); err != nil {
-		http_error.ErrInternalServerError.Causef("Failed to write user response %s", err).Write(w, r)
+	if UsedTokenIssuer == nil {
+		panic("token issuer is nil")
+	}
+
+	token, err := UsedTokenIssuer.IssueToken(&wedo.DecodedToken{UserName: user.Name})
+
+	result = &wedo.AuthenticationResult{
+		Token: token,
+		User:  user,
+	}
+
+	log.Println(result)
+	if err := writeJson(w, result); err != nil {
+		httperrors.ErrInternalServerError.Causef("failed to write auth response: %s", err).Write(w, r)
 	}
 }
 
@@ -66,12 +79,12 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 	user, err := registerUser(ctx, &registrationRequest)
 	if err != nil {
-		http_error.ErrInternalServerError.Causef("Failed to register user: %s", err).Write(w, r)
+		httperrors.ErrInternalServerError.Causef("Failed to register user: %s", err).Write(w, r)
 		return
 	}
 
 	if err := writeJson(w, user); err != nil {
-		http_error.ErrInternalServerError.Causef("Failed to write user response %s", err).Write(w, r)
+		httperrors.ErrInternalServerError.Causef("Failed to write user response %s", err).Write(w, r)
 	}
 }
 

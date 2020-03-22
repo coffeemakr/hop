@@ -3,12 +3,13 @@ package cmd
 import (
 	"fmt"
 	"github.com/spf13/cobra"
+	"log"
 	"net/http"
 	"os"
 )
 
 var rootCommand = &cobra.Command{
-	Use:"wedo",
+	Use: "wedo",
 }
 
 var client *Client
@@ -16,8 +17,19 @@ var client *Client
 func init() {
 	rootCommand.AddCommand(doneCommand, addCommand, loginCommand, registerCommand)
 	client = &Client{
-		BaseUrl: "http://localhost:8080",
-		Client:  &http.Client{},
+		BaseUrl:    "http://localhost:8080",
+		Client:     &http.Client{},
+		TokenStore: NewFileTokenStore(os.ExpandEnv("$HOME/.wedo-cred.txt")),
+	}
+
+	err := client.LoadToken()
+	switch err {
+	case nil:
+		log.Println("Successfully loaded token!")
+	case ErrNoTokenSaved:
+		log.Println("No token stored.")
+	default:
+		log.Fatalln(err)
 	}
 }
 
