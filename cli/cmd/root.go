@@ -15,7 +15,7 @@ var rootCommand = &cobra.Command{
 var client *Client
 
 func init() {
-	rootCommand.AddCommand(doneCommand, addCommand, loginCommand, registerCommand)
+	rootCommand.AddCommand(doneCommand, addCommand, loginCommand, registerCommand, completionCommand)
 	client = &Client{
 		BaseUrl:    "http://localhost:8080",
 		Client:     &http.Client{},
