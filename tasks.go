@@ -28,7 +28,7 @@ type Task struct {
 	IntervalUnit  IntervalUnit   `json:"interval_unit"`
 	Interval      uint32         `json:"interval"`
 	LastExecution *TaskExecution `json:"last_execution,omitempty"`
-	CreatorName   string
+	GroupID       string         `json:"group_id"`
 }
 
 func NewWeeklyTask(name string) *Task {

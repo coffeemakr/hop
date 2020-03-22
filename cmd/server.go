@@ -54,8 +54,8 @@ func runServer() error {
 	api.HandleFunc("/groups", handlers.GetAllGroups).Methods("GET")
 	api.HandleFunc("/groups", handlers.CreateGroup).Methods("POST")
 	api.HandleFunc("/tasks", handlers.GetTasks).Methods("GET")
-	api.HandleFunc("/tasks", handlers.CreateTask).Methods("POST")
-	api.HandleFunc("/tasks/execution", handlers.CreateTaskExecution).Methods("POST")
+	api.HandleFunc("/groups/{groupId}/tasks", handlers.CreateTaskForGroup).Methods("POST")
+	api.HandleFunc("/tasks/{taskId}/execution", handlers.CreateTaskExecution).Methods("POST")
 	api.Use(authenticator.MiddleWare)
 
 	return http.ListenAndServe(addr, router)

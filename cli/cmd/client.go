@@ -8,7 +8,6 @@ import (
 	"github.com/coffeemakr/wedo"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -180,7 +179,6 @@ func (c *Client) CreateGroup(name string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create group: %s", err)
 	}
-	log.Println(group)
 	return nil
 }
 
@@ -235,4 +233,11 @@ func (c *Client) JoinGroup(groupId string) error {
 		return fmt.Errorf("failed to join group: %s", err)
 	}
 	return nil
+}
+
+func (c *Client) CreateTask(task *wedo.Task) error {
+	_, err := c.sendJson("POST", "/tasks", c.Token(), task)
+	if err != nil {
+		return fmt.Errorf("creation of task failed: %s", err)
+	}
 }
