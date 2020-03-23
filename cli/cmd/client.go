@@ -276,7 +276,7 @@ func (c *Client) CreateTaskForGroup(task *wedo.Task, groupId string) error {
 	if err != nil {
 		return err
 	}
-	_, err = c.sendJson("POST", joinUrl("tasks", groupId), token, task)
+	_, err = c.sendJson("POST", joinUrl("groups", groupId, "tasks"), token, task)
 	if err != nil {
 		return fmt.Errorf("creation of task failed: %s", err)
 	}

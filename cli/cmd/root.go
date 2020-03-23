@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"log"
 	"net/http"
 	"net/url"
@@ -38,6 +39,19 @@ func init() {
 }
 
 func Execute() {
+	viper.SetConfigName("wedo-config")
+	viper.AddConfigPath("$HOME/.config")
+	err := viper.ReadInConfig()
+	if err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			log.Println("no configuration present")
+			// Config file not found; ignore error if desired
+		} else {
+			fmt.Println(err)
+			os.Exit(2)
+		}
+
+	}
 	if err := rootCommand.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)

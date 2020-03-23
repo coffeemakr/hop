@@ -2,20 +2,22 @@ package main
 
 import (
 	"context"
+	"encoding/binary"
 	"github.com/coffeemakr/wedo/handlers"
 	"github.com/gorilla/mux"
 	"github.com/square/go-jose/v3"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
 
+	crypto_rand "crypto/rand"
 	"github.com/spf13/cobra"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	math_rand "math/rand"
 )
 
 var (
@@ -48,13 +50,14 @@ func runServer() error {
 	api := router.MatcherFunc(func(request *http.Request, match *mux.RouteMatch) bool {
 		return "" != request.Header.Get("Authorization")
 	}).Subrouter()
+	api.HandleFunc("/groups", handlers.GetAllGroups).Methods("GET")
+	api.HandleFunc("/groups", handlers.CreateGroup).Methods("POST")
 	api.HandleFunc("/groups/{groupId}", handlers.GetGroup).Methods("GET")
 	api.HandleFunc("/groups/{groupId}", handlers.DeleteGroup).Methods("DELETE")
 	api.HandleFunc("/groups/{groupId}/join", handlers.JoinGroup).Methods("POST")
-	api.HandleFunc("/groups", handlers.GetAllGroups).Methods("GET")
-	api.HandleFunc("/groups", handlers.CreateGroup).Methods("POST")
-	api.HandleFunc("/tasks", handlers.GetTasks).Methods("GET")
 	api.HandleFunc("/groups/{groupId}/tasks", handlers.CreateTaskForGroup).Methods("POST")
+	api.HandleFunc("/tasks", handlers.GetAllTasks).Methods("GET")
+	api.HandleFunc("/tasks/{taskId}", handlers.GetTaskById).Methods("GET")
 	api.HandleFunc("/tasks/{taskId}/execution", handlers.CreateTaskExecution).Methods("POST")
 	api.Use(authenticator.MiddleWare)
 
@@ -78,8 +81,17 @@ func loadPrivateKey() (*jose.JSONWebKey, error) {
 	return &key, nil
 }
 
+func securelySeed() {
+	var b [8]byte
+	_, err := crypto_rand.Read(b[:])
+	if err != nil {
+		panic("cannot seed math/rand package with cryptographically secure random number generator")
+	}
+	math_rand.Seed(int64(binary.LittleEndian.Uint64(b[:])))
+}
+
 func main() {
-	rand.Seed(time.Now().UTC().UnixNano())
+	securelySeed()
 	key, err := loadPrivateKey()
 	if err != nil {
 		log.Fatal(err)

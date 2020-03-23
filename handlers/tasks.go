@@ -10,12 +10,24 @@ import (
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"log"
 	"net/http"
+	"time"
 )
-var (
-	ErrNoSuchTask = errors.New("no such task")
-	HttpErrTaskNotFound = http_error.NewHttpErrorType(http.StatusNotFound, "task not found")
 
+var (
+	ErrNoSuchTask            = errors.New("no such task")
+	ErrMultipleTaskedMatched = errors.New("multiple tasks matched")
+	HttpErrTaskNotFound      = http_error.NewHttpErrorType(http.StatusNotFound, "task not found")
+	lookupGroupForTask       = bson.D{
+		{"$lookup", bson.D{
+			{"from", "groups"},
+			{"localField", "groupid"},
+			{"foreignField", "id"},
+			{"as", "group"},
+		}},
+	}
 )
 
 func createTask(ctx context.Context, task *wedo.Task) (err error) {
@@ -66,10 +78,24 @@ func CreateTaskForGroup(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func GetTaskById(w http.ResponseWriter, r *http.Request) {
+	taskId := getTaskId(r)
+	ctx := r.Context()
+	task, err := getTaskByIdIncludingGroup(ctx, taskId)
+	switch err {
+	case ErrNoSuchTask:
+		HttpErrTaskNotFound.Cause(err).Write(w, r)
+	case nil:
+		mustWriteJson(w, task)
+	default:
+		http_error.ErrInternalServerError.Cause(err).Write(w, r)
+	}
+}
+
 func CreateTaskExecution(w http.ResponseWriter, r *http.Request) {
 	taskId := getTaskId(r)
 	ctx := r.Context()
-	task, err := getTasksById(ctx, taskId)
+	task, err := getTaskByIdIncludingGroup(ctx, taskId)
 	if err != nil {
 		if err == ErrNoSuchTask {
 			HttpErrTaskNotFound.Cause(err).Write(w, r)
@@ -78,17 +104,63 @@ func CreateTaskExecution(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+
 	fmt.Fprintf(w, "Task execution! %s", task)
 }
 
-func getTasksById(ctx context.Context, taskId string) (*wedo.Task, error) {
+func getTaskByIdIncludingGroup(ctx context.Context, taskId string) (*wedo.Task, error) {
 	var task wedo.Task
-	err := taskCollection.FindOne(ctx, bson.M{"id": bson.M{"$eq": taskId}}).Decode(&task)
+	match := bson.D{{"$match", bson.D{{"id", taskId},}}}
+	opts := options.Aggregate().SetMaxTime(2 * time.Second)
+	cursor, err := taskCollection.Aggregate(ctx, mongo.Pipeline{match, lookupGroupForTask}, opts)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return nil, ErrNoSuchTask
-		}
-		return nil, err
+		log.Fatal(err)
 	}
+	if !cursor.Next(ctx) {
+		return nil, ErrNoSuchTask
+	}
+	err = cursor.Decode(&task)
+	if err != nil {
+		return nil, fmt.Errorf("decoding task failed: %s", err)
+	}
+	if cursor.Next(ctx) {
+		return nil, ErrMultipleTaskedMatched
+	}
+	log.Println("task", task)
 	return &task, nil
+}
+
+func getTasksForUser(ctx context.Context, userName string) (result []*wedo.Task, err error) {
+	match := bson.D{{"$match", bson.D{
+		{"group." + memberNamesField, bson.D{
+			{"$in", []string{userName}},
+		}},
+	}}}
+
+	cursor, err := taskCollection.Aggregate(ctx, mongo.Pipeline{lookupGroupForTask, match})
+	if err != nil {
+		return
+	}
+	for cursor.Next(ctx) {
+		var task wedo.Task
+		err = cursor.Decode(&task)
+		if err != nil {
+			return
+		}
+		result = append(result, &task)
+	}
+	return result, nil
+}
+
+func GetAllTasks(w http.ResponseWriter, r *http.Request) {
+	userName, err := GetUserNameFromRequest(r)
+	if err != nil {
+		panic(err)
+	}
+	tasks, err := getTasksForUser(r.Context(), userName)
+	if err != nil {
+		http_error.ErrInternalServerError.Cause(err).Write(w, r)
+		return
+	}
+	mustWriteJson(w, tasks)
 }

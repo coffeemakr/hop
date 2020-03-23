@@ -16,6 +16,7 @@ var (
 	taskListCommand = &cobra.Command{
 		Use: "list",
 		Run: runTaskList,
+		Aliases: []string{"ls"},
 	}
 	taskGetCommand = &cobra.Command{
 		Use:  "get",
@@ -68,7 +69,10 @@ func runAddTask(cmd *cobra.Command, args []string) {
 	var name = args[0]
 	var task = wedo.NewTask(name, wedo.Weeks, 1)
 	var defaultGroupId = getDefaultGroup()
-	err := client.CreateTaskForGroup(task)
+	if defaultGroupId == "" {
+		log.Fatalln("no default group set")
+	}
+	err := client.CreateTaskForGroup(task, defaultGroupId)
 	if err != nil {
 		log.Fatalln(err)
 	}

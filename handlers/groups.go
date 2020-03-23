@@ -15,8 +15,10 @@ import (
 
 var (
 	HttpErrGroupNotFound = http_error.NewHttpErrorType(http.StatusNotFound, "Group not found")
-	ErrGroupNotFound = errors.New("group not found")
+	ErrGroupNotFound     = errors.New("group not found")
 )
+
+const memberNamesField = "membernames"
 
 func CreateGroup(w http.ResponseWriter, r *http.Request) {
 	var ctx = r.Context()
@@ -121,7 +123,7 @@ func joinGroup(ctx context.Context, userName string, groupId string) error {
 	result, err := groupsCollection.UpdateOne(ctx, bson.M{
 		"id": bson.M{"$eq": groupId},
 	}, bson.M{
-		"$addToSet": bson.M{"membernames": userName},
+		"$addToSet": bson.M{memberNamesField: userName},
 	})
 	if err != nil {
 		return fmt.Errorf("joining group failed: %s", err)
@@ -134,8 +136,8 @@ func joinGroup(ctx context.Context, userName string, groupId string) error {
 
 func deleteGroupForUser(ctx context.Context, groupId string, userName string) error {
 	_, err := groupsCollection.DeleteOne(ctx, bson.M{
-		"id":          bson.M{"$eq": groupId},
-		"membernames": bson.M{"$in": []string{userName}},
+		"id":             bson.D{{"$eq", groupId}},
+		memberNamesField: bson.D{{"$in", []string{userName}}},
 	})
 	return err
 }

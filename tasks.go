@@ -29,6 +29,7 @@ type Task struct {
 	Interval      uint32         `json:"interval"`
 	LastExecution *TaskExecution `json:"last_execution,omitempty"`
 	GroupID       string         `json:"group_id"`
+	Group         *Group         `json:"group,omitempty" bson:"-"`
 }
 
 func NewWeeklyTask(name string) *Task {

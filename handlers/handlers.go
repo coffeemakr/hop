@@ -3,8 +3,8 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	http_error "github.com/coffeemakr/go-http-error"
-	"github.com/coffeemakr/wedo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -37,38 +37,24 @@ func SetDB(db *mongo.Database) {
 }
 
 func writeJson(w http.ResponseWriter, value interface{}) (err error) {
+	// prevent browsers from displaying the JSON as HTML
 	w.Header().Set("Content-Type", "application/json")
+	// disable loading of any sources
 	w.Header().Set("Content-Security-Policy", "default-src 'none'")
-	return json.NewEncoder(w).Encode(value)
+	// disable content type sniffing, for CORB and disallow usage in script or style tags
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	err = json.NewEncoder(w).Encode(value)
+	if err != nil {
+		err = fmt.Errorf("failed to write response: %s", err)
+	}
+	return err
 }
 
-func getTasks(ctx context.Context) (result []*wedo.Task, err error) {
-	cursor, err := taskCollection.Find(ctx, bson.D{})
-	if err != nil {
-		return
-	}
-	for cursor.Next(ctx) {
-		var task wedo.Task
-		err = cursor.Decode(&task)
-		if err != nil {
-			return
-		}
-		result = append(result, &task)
-	}
-	return result, nil
-}
-
-func GetTasks(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	tasks, err := getTasks(r.Context())
-	if err != nil {
-		http_error.ErrInternalServerError.Cause(err).Write(w, r)
-		return
-	}
-
-	err = json.NewEncoder(w).Encode(tasks)
+func mustWriteJson(w http.ResponseWriter, value interface{}) {
+	err := writeJson(w, value)
 	if err != nil {
 		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
 
