@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/cobra"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 )
 
@@ -12,24 +13,27 @@ var rootCommand = &cobra.Command{
 	Use: "wedo",
 }
 
-var client *Client
-
+var (
+	client *Client
+	proxyStr string = "http://localhost:9090"
+)
 func init() {
-	rootCommand.AddCommand(doneCommand, addCommand, loginCommand, registerCommand, completionCommand, groupCommand)
-	client = &Client{
-		BaseUrl:    "http://localhost:8080",
-		Client:     &http.Client{},
-		TokenStore: NewFileTokenStore(os.ExpandEnv("$HOME/.wedo-cred.txt")),
+	rootCommand.AddCommand(doneCommand, loginCommand, registerCommand, completionCommand, groupCommand,
+		taskCommand)
+
+	proxyURL, err := url.Parse(proxyStr)
+	if err != nil {
+		log.Println(err)
 	}
 
-	err := client.LoadToken()
-	switch err {
-	case nil:
-		log.Println("Successfully loaded token!")
-	case ErrNoTokenSaved:
-		log.Println("No token stored.")
-	default:
-		log.Fatalln(err)
+	client = &Client{
+		BaseUrl:    "http://localhost:8080",
+		Client:     &http.Client{
+			Transport: &http.Transport{
+				Proxy: http.ProxyURL(proxyURL),
+			},
+		},
+		TokenStore: NewFileTokenStore(os.ExpandEnv("$HOME/.wedo-cred.txt")),
 	}
 }
 

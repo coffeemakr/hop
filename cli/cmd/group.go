@@ -32,6 +32,10 @@ var groupJoinCommand = &cobra.Command{
 	Args: cobra.ExactArgs(1),
 }
 
+func getDefaultGroup() string {
+
+}
+
 func runAddGroup(cmd *cobra.Command, args []string) {
 	groupName := args[0]
 	err := client.CreateGroup(groupName)

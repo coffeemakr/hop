@@ -14,8 +14,10 @@ import (
 	"path"
 )
 
-var ErrNoTokenSaved = errors.New("no saved token")
-
+var (
+	ErrNoTokenSaved = errors.New("no saved token")
+	ErrNotFound = errors.New("item not found")
+)
 type TokenStore interface {
 	SaveToken(token string) error
 	GetToken() (string, error)
@@ -78,21 +80,11 @@ func (c *Client) newRequest(method string, relativeUrl string, authenticationTok
 	return req, err
 }
 
-func (c *Client) sendJson(method string, relativeUrl string, authenticationToken string, body interface{}) (*http.Response, error) {
-	bodyBytes, err := json.Marshal(body)
-	if err != nil {
-		return nil, fmt.Errorf("JSON creation failed: %s", err)
-	}
-	req, err := c.newRequest(method, relativeUrl, authenticationToken, bytes.NewReader(bodyBytes))
-	if err != nil {
-		return nil, fmt.Errorf("request creation failed: %s", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	response, err := c.Client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request sending failed: %s", err)
-	}
+func checkResponse(response *http.Response) error {
 	if response.StatusCode >= 300 || response.StatusCode < 100 {
+		if response.StatusCode == 404 {
+			return ErrNotFound
+		}
 		contentType := response.Header.Get("Content-Type")
 		var description string
 		if contentType == "application/json" {
@@ -108,13 +100,37 @@ func (c *Client) sendJson(method string, relativeUrl string, authenticationToken
 				description = string(descriptionBytes[:])
 			}
 		}
-		return nil, fmt.Errorf("request failed with status code %d \n\n%s", response.StatusCode, description)
+		return fmt.Errorf("request failed with status code %d \n\n%s", response.StatusCode, description)
+	}
+	return nil
+}
+
+func (c *Client) sendJson(method string, relativeUrl string, authenticationToken string, body interface{}) (*http.Response, error) {
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("JSON creation failed: %s", err)
+	}
+	req, err := c.newRequest(method, relativeUrl, authenticationToken, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return nil, fmt.Errorf("request creation failed: %s", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	response, err := c.Client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request sending failed: %s", err)
+	}
+	if err := checkResponse(response); err != nil {
+		return nil, err
 	}
 	return response, nil
 }
 
-func (c *Client) receiveJson(method string, relativeUrl string, authenticationToken string, result interface{}) error {
-	req, err := c.newRequest(method, relativeUrl, authenticationToken, nil)
+func (c *Client) receiveJsonAuthenticated(method string, relativeUrl string, result interface{}) error {
+	token, err := c.Token()
+	if err != nil {
+		return err
+	}
+	req, err := c.newRequest(method, relativeUrl, token, nil)
 	if err != nil {
 		return err
 	}
@@ -122,10 +138,13 @@ func (c *Client) receiveJson(method string, relativeUrl string, authenticationTo
 	if err != nil {
 		return err
 	}
+	if err := checkResponse(response); err != nil {
+		return err
+	}
 	// Decode response
 	err = json.NewDecoder(response.Body).Decode(result)
 	if err != nil {
-		return err
+		return fmt.Errorf("parsing response: %s", err)
 	}
 	return nil
 }
@@ -175,24 +194,33 @@ func (c *Client) CreateGroup(name string) error {
 	group := wedo.Group{
 		Name: name,
 	}
-	err := c.sendAndReceiveJson("POST", "/groups", c.Token(), &group, &group)
+	token, err := c.Token()
+	if err != nil {
+		return err
+	}
+	err = c.sendAndReceiveJson("POST", "/groups", token, &group, &group)
 	if err != nil {
 		return fmt.Errorf("failed to create group: %s", err)
 	}
 	return nil
 }
 
-func (c *Client) ListGroup() ([]*wedo.Group, error) {
-	var results []*wedo.Group
-	err := c.receiveJson("GET", "/groups", c.Token(), &results)
+func (c *Client) ListGroup() (results []*wedo.Group, err error) {
+	err = c.receiveJsonAuthenticated("GET", "/groups", &results)
 	if err != nil {
 		return nil, err
 	}
 	return results, nil
 }
 
-func (c *Client) Token() string {
-	return c.token
+func (c *Client) Token() (string, error) {
+	if c.token == "" {
+		err := c.LoadToken()
+		if err != nil {
+			return "", err
+		}
+	}
+	return c.token, nil
 }
 
 func joinUrl(parts ...string) string {
@@ -220,7 +248,11 @@ func (c *Client) send(method string, relativeUrl string, authenticationToken str
 }
 
 func (c *Client) DeleteGroupByID(id string) error {
-	err := c.send("DELETE", joinUrl("groups", id), c.Token())
+	token, err := c.Token()
+	if err != nil {
+		return err
+	}
+	err = c.send("DELETE", joinUrl("groups", id), token)
 	if err != nil {
 		return fmt.Errorf("group deletion failed: %s", err)
 	}
@@ -228,16 +260,44 @@ func (c *Client) DeleteGroupByID(id string) error {
 }
 
 func (c *Client) JoinGroup(groupId string) error {
-	err := c.send("POST", joinUrl("groups", groupId, "join"), c.Token())
+	token, err := c.Token()
+	if err != nil {
+		return err
+	}
+	err = c.send("POST", joinUrl("groups", groupId, "join"), token)
 	if err != nil {
 		return fmt.Errorf("failed to join group: %s", err)
 	}
 	return nil
 }
 
-func (c *Client) CreateTask(task *wedo.Task) error {
-	_, err := c.sendJson("POST", "/tasks", c.Token(), task)
+func (c *Client) CreateTaskForGroup(task *wedo.Task, groupId string) error {
+	token, err := c.Token()
+	if err != nil {
+		return err
+	}
+	_, err = c.sendJson("POST", joinUrl("tasks", groupId), token, task)
 	if err != nil {
 		return fmt.Errorf("creation of task failed: %s", err)
 	}
+	return nil
+}
+
+func (c *Client) GetTaskList() (tasks []*wedo.Task, err error) {
+	err = c.receiveJsonAuthenticated("GET", "/tasks", &tasks)
+	if err != nil {
+		err = fmt.Errorf("failed to get list of tasks: %s", err)
+	}
+	return
+}
+
+func (c *Client) GetTaskDetails(taskId string) (*wedo.Task, error) {
+	var task wedo.Task
+	var err error
+	err = c.receiveJsonAuthenticated("GET", joinUrl("tasks", taskId), &task)
+	if err != nil {
+		err = fmt.Errorf("failed to get task: %s", err)
+		return nil, err
+	}
+	return &task, nil
 }
