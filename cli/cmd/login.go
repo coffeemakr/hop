@@ -33,20 +33,20 @@ func readPlainText() (text string, err error) {
 }
 
 func readCredentials() (*wedo.Credentials, error) {
-	var creds wedo.Credentials
+	var credentials wedo.Credentials
 	var err error
 	fmt.Print("Name    : ")
-	creds.Name, err = readPlainText()
+	credentials.Name, err = readPlainText()
 	if err != nil {
 		return nil, err
 	}
 	fmt.Print("Password: ")
-	creds.Password, err = readPassword()
+	credentials.Password, err = readPassword()
 	fmt.Println()
 	if err != nil {
 		return nil, err
 	}
-	return &creds, nil
+	return &credentials, nil
 }
 
 func runLogin(cmd *cobra.Command, args []string) {

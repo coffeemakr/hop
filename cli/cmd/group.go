@@ -105,6 +105,7 @@ func runListGroup(cmd *cobra.Command, args []string) {
 		fmt.Println("No groups.")
 	}
 	for _, group := range groups {
+		setDefaultGroup("")
 		fmt.Printf("Group %s: %s\n", group.ID, group.Name)
 	}
 }

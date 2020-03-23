@@ -61,7 +61,7 @@ func runTaskList(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 	for _, task := range tasks {
-		fmt.Printf("Task %s: %s\n", task.ID, task.Name)
+		fmt.Printf("Task %s: %-40s %-20s %s\n", task.ID, task.Name, task.AssigneeName, task.DueDate.Format("01.02.2006"))
 	}
 }
 

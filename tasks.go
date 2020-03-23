@@ -22,14 +22,61 @@ type TaskExecution struct {
 	Time       time.Time
 }
 
+type Interval struct {
+	Unit   IntervalUnit `json:"unit"`
+	Amount uint32       `json:"amount"`
+}
+
+func (i Interval) String() string {
+	return fmt.Sprintf("every %d %s", i.Amount, i.Unit)
+}
+
+func (i Interval) Next(day time.Time) time.Time {
+	switch i.Unit {
+	case Days:
+		return day.AddDate(0, 0, int(i.Amount))
+	case Weeks:
+		return day.AddDate(0, 0, int(7*i.Amount))
+	case Months:
+		return day.AddDate(0, int(i.Amount), 0)
+	case Years:
+		return day.AddDate(int(i.Amount), 0, 0)
+	default:
+		panic("invalid unit: " + i.Unit)
+	}
+}
+
 type Task struct {
 	ID            string         `json:"id"`
 	Name          string         `json:"name"`
-	IntervalUnit  IntervalUnit   `json:"interval_unit"`
-	Interval      uint32         `json:"interval"`
+	Interval      Interval       `json:"interval"`
 	LastExecution *TaskExecution `json:"last_execution,omitempty"`
-	GroupID       string         `json:"group_id"`
+	GroupID       string         `json:"group_id,omitempty"`
 	Group         *Group         `json:"group,omitempty" bson:"-"`
+	Assignee      *User          `json:"assignee,omitempty" bson:"-"`
+	AssigneeName  string         `json:"assignee_name,omitempty"`
+	DueDate       time.Time      `json:"due_date"`
+}
+
+func (g *Group) NextName(after string) string {
+	for i, memberName := range g.MemberNames {
+		if memberName == after {
+			i++
+			i = i % len(g.MemberNames)
+			return g.MemberNames[i]
+		}
+	}
+	return g.MemberNames[0]
+}
+
+// AssignNext sets the assignee name to the next of the group.
+// panics if the t.Group is null
+func (t *Task) AssignNext() {
+	if t.Group == nil {
+		panic("Group not set")
+	}
+	t.AssigneeName = t.Group.NextName(t.AssigneeName)
+	t.Assignee = nil
 }
 
 func NewWeeklyTask(name string) *Task {
@@ -38,14 +85,16 @@ func NewWeeklyTask(name string) *Task {
 
 func NewTask(name string, intervalType IntervalUnit, interval uint32) *Task {
 	return &Task{
-		Name:         name,
-		IntervalUnit: intervalType,
-		Interval:     interval,
+		Name: name,
+		Interval: Interval{
+			Unit:   intervalType,
+			Amount: interval,
+		},
 	}
 }
 
 func (t Task) String() string {
 	return fmt.Sprintf(
-		"Task{ ID=%s, Name=%s, IntervalUnit=%s, Interval=%d, LastExecution=%s }",
-		t.ID, t.Name, t.IntervalUnit, t.Interval, t.LastExecution)
+		"Task{ ID=%s, Name=%s, Interval=%s, LastExecution=%s DueDate=%s AssigneeName=%s groupId=%s }",
+		t.ID, t.Name, t.Interval, t.LastExecution, t.DueDate, t.AssigneeName, t.GroupID)
 }

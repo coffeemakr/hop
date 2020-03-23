@@ -12,15 +12,17 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
+	"math/rand"
 	"net/http"
 	"time"
 )
 
 var (
-	ErrNoSuchTask            = errors.New("no such task")
-	ErrMultipleTaskedMatched = errors.New("multiple tasks matched")
-	HttpErrTaskNotFound      = http_error.NewHttpErrorType(http.StatusNotFound, "task not found")
-	lookupGroupForTask       = bson.D{
+	ErrNoSuchTask             = errors.New("no such task")
+	ErrMultipleTaskedMatched  = errors.New("multiple tasks matched")
+	HttpErrTaskNotFound       = http_error.NewHttpErrorType(http.StatusNotFound, "task not found")
+	HttpErrAssigneeNotInGroup = http_error.NewHttpErrorType(http.StatusBadRequest, "assignee not in group")
+	lookupGroupForTask        = bson.D{
 		{"$lookup", bson.D{
 			{"from", "groups"},
 			{"localField", "groupid"},
@@ -54,20 +56,66 @@ func getTaskId(r *http.Request) string {
 	return groupId
 }
 
+func randomChoice(values []string) string {
+	index := rand.Intn(len(values))
+	return values[index]
+}
+
+func stringArrayContain(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
+}
+
 func CreateTaskForGroup(w http.ResponseWriter, r *http.Request) {
-	var task wedo.Task
+	var (
+		task  wedo.Task
+		group *wedo.Group
+		err   error
+		ctx   = r.Context()
+	)
 	groupId := getGroupId(r)
-	var ctx = r.Context()
-	// TODO: check if user has write permissions on group
-	var _, err = GetUserNameFromRequest(r)
+	userName, err := GetUserNameFromRequest(r)
 	if err != nil {
 		panic(err)
 	}
+	// decode task
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
 		ErrInvalidJsonBody.Cause(err).Write(w, r)
 		return
 	}
+
+	// load group and check therefore if the user is a member of the group
+	group, err = getGroupForUser(ctx, groupId, userName)
+	if err != nil {
+		http_error.ErrBadRequest.Cause(err).Write(w, r)
+		return
+	}
+
+	if task.AssigneeName == "" {
+		task.AssigneeName = randomChoice(group.MemberNames)
+	} else if !stringArrayContain(group.MemberNames, task.AssigneeName) {
+		HttpErrAssigneeNotInGroup.Causef("can't assign %s", task.AssigneeName).Write(w, r)
+		return
+	}
+
+	switch task.Interval.Unit {
+	case wedo.Days:
+	case wedo.Months:
+	case wedo.Years:
+	case wedo.Weeks:
+	// Ok
+	default:
+		http_error.ErrBadRequest.CauseString("Invalid interval unit").Write(w, r)
+		return
+
+	}
+
 	task.LastExecution = nil
+	task.DueDate = task.Interval.Next(time.Now())
 	task.GroupID = groupId
 	if err := createTask(ctx, &task); err != nil {
 		http_error.ErrInternalServerError.Causef("Failed to create task: %s", err).Write(w, r)

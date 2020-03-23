@@ -9,6 +9,7 @@ import (
 	"github.com/coffeemakr/wedo"
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"log"
 	"net/http"
 )
@@ -64,13 +65,16 @@ func GetAllGroups(w http.ResponseWriter, r *http.Request) {
 
 func GetGroup(w http.ResponseWriter, r *http.Request) {
 	var ctx = r.Context()
-	//var userName = GetUserNameFromRequest(r)
+	var userName, err = GetUserNameFromRequest(r)
+	if err != nil {
+		panic(err)
+	}
 	var vars = mux.Vars(r)
 	groupId, ok := vars["groupId"]
 	if !ok {
 		panic("Can't read group id")
 	}
-	group, err := getGroup(ctx, groupId)
+	group, err := getGroupForUser(ctx, groupId, userName)
 	if err != nil {
 		http_error.ErrInternalServerError.Cause(err).Write(w, r)
 		return
@@ -150,10 +154,16 @@ func createGroup(ctx context.Context, group *wedo.Group) error {
 	return nil
 }
 
-func getGroup(ctx context.Context, groupId string) (*wedo.Group, error) {
+func getGroupForUser(ctx context.Context, groupId string, userName string) (*wedo.Group, error) {
 	var group wedo.Group
-	err := groupsCollection.FindOne(ctx, bson.M{"id": groupId}).Decode(&group)
+	err := groupsCollection.FindOne(ctx, bson.M{
+		"id": groupId,
+		memberNamesField: bson.M{"$in": []string{userName}},
+	}).Decode(&group)
 	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			err = ErrGroupNotFound
+		}
 		return nil, err
 	}
 
@@ -163,7 +173,7 @@ func getGroup(ctx context.Context, groupId string) (*wedo.Group, error) {
 func getGroups(ctx context.Context, userName string) ([]*wedo.Group, error) {
 	var results []*wedo.Group
 	cursor, err := groupsCollection.Find(ctx, bson.M{
-		"membernames": bson.M{"$in": []string{userName}},
+		memberNamesField: bson.M{"$in": []string{userName}},
 	})
 	if err != nil {
 		return nil, err
