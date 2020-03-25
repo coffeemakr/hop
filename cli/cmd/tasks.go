@@ -1,12 +1,16 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"github.com/coffeemakr/wedo"
 	"github.com/spf13/cobra"
 	"log"
 	"os"
+	"sort"
+	"strings"
 	"text/template"
+	"time"
 )
 
 var (
@@ -14,8 +18,8 @@ var (
 		Use: "task",
 	}
 	taskListCommand = &cobra.Command{
-		Use: "list",
-		Run: runTaskList,
+		Use:     "list",
+		Run:     runTaskList,
 		Aliases: []string{"ls"},
 	}
 	taskGetCommand = &cobra.Command{
@@ -29,6 +33,9 @@ var (
 		Run:   runAddTask,
 		Args:  cobra.ExactArgs(1),
 	}
+
+	taskAddOptionDaily, taskAddOptionWeekly, taskAddOptionMonthly, taskAddOptionYearly bool
+	taskAddOptionInterval                                                              uint32
 )
 
 func runTaskGet(cmd *cobra.Command, args []string) {
@@ -51,7 +58,32 @@ func runTaskGet(cmd *cobra.Command, args []string) {
 }
 
 func init() {
+	taskAddCommand.PersistentFlags().BoolVarP(&taskAddOptionDaily, "daily", "d", false, "Repeat task daily")
+	taskAddCommand.PersistentFlags().BoolVarP(&taskAddOptionWeekly, "weekly", "w", false, "Repeat task weekly")
+	taskAddCommand.PersistentFlags().BoolVarP(&taskAddOptionMonthly, "monthly", "m", false, "Repeat task monthly")
+	taskAddCommand.PersistentFlags().BoolVarP(&taskAddOptionYearly, "yearly", "y", false, "Repeat task yearly")
+	taskAddCommand.PersistentFlags().Uint32Var(&taskAddOptionInterval, "interval", 1, "Interval number e.g. X weeks when --weeks flag is used")
 	taskCommand.AddCommand(taskAddCommand, taskListCommand, taskGetCommand)
+}
+
+func getDaysUntilTime(due time.Time) int {
+	return int(due.Sub(time.Now()).Hours() / 24)
+}
+
+func formatDue(dueDate time.Time) string {
+	daysLeft := getDaysUntilTime(dueDate)
+	switch {
+	case daysLeft < -1:
+		return fmt.Sprintf("overdue (%d days)", daysLeft)
+	case daysLeft == -1:
+		return "overdue (1 day)"
+	case daysLeft == 0:
+		return "due today"
+	case daysLeft == 1:
+		return "1 day left"
+	default:
+		return fmt.Sprintf("%d days left", daysLeft)
+	}
 }
 
 func runTaskList(cmd *cobra.Command, args []string) {
@@ -60,22 +92,73 @@ func runTaskList(cmd *cobra.Command, args []string) {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+	sort.Sort(wedo.ByDueDate(tasks))
 	for _, task := range tasks {
-		fmt.Printf("Task %s: %-40s %-20s %s\n", task.ID, task.Name, task.AssigneeName, task.DueDate.Format("01.02.2006"))
+		shortId := task.ShortID()
+		fmt.Printf("%s %-40s %-20s %s\n", shortId, task.Name, task.AssigneeName, formatDue(task.DueDate))
 	}
 }
 
+func getIntervalUnit() (unit wedo.IntervalUnit, err error) {
+	var bits int
+	const (
+		DailyBit   = 1 << 0
+		WeeklyBit  = 1 << 1
+		MonthlyBit = 1 << 2
+		YearlyBit  = 1 << 3
+	)
+	if taskAddOptionDaily {
+		bits |= DailyBit
+	}
+	if taskAddOptionWeekly {
+		bits |= WeeklyBit
+	}
+
+	if taskAddOptionMonthly {
+		bits |= MonthlyBit
+	}
+	if taskAddOptionYearly {
+		bits |= YearlyBit
+	}
+	switch bits {
+	case YearlyBit:
+		unit = wedo.Years
+	case MonthlyBit:
+		unit = wedo.Months
+	case WeeklyBit:
+		unit = wedo.Weeks
+	case DailyBit:
+		unit = wedo.Days
+	case 0:
+		err = errors.New("require at least one of weekly, daily, monthly or yearly flags")
+	default:
+		err = fmt.Errorf("got conflicting interval flags %d", bits)
+	}
+	return
+}
+
 func runAddTask(cmd *cobra.Command, args []string) {
-	var name = args[0]
-	var task = wedo.NewTask(name, wedo.Weeks, 1)
-	var defaultGroupId = getDefaultGroup()
+	var (
+		defaultGroupId = getDefaultGroup()
+		task           wedo.Task
+		err            error
+	)
+
+	task.Name = strings.TrimSpace(args[0])
+	task.Interval.Amount = taskAddOptionInterval
+	task.Interval.Unit, err = getIntervalUnit()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
 	if defaultGroupId == "" {
 		log.Fatalln("no default group set")
 	}
-	err := client.CreateTaskForGroup(task, defaultGroupId)
+
+	err = client.CreateTaskForGroup(&task, defaultGroupId)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	fmt.Printf("Task created: %s\n", task)
-
 }

@@ -98,3 +98,13 @@ func (t Task) String() string {
 		"Task{ ID=%s, Name=%s, Interval=%s, LastExecution=%s DueDate=%s AssigneeName=%s groupId=%s }",
 		t.ID, t.Name, t.Interval, t.LastExecution, t.DueDate, t.AssigneeName, t.GroupID)
 }
+
+func (t *Task) ShortID() string {
+	return t.ID[:8]
+}
+
+type ByDueDate []*Task
+
+func (a ByDueDate) Len() int           { return len(a) }
+func (a ByDueDate) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByDueDate) Less(i, j int) bool { return a[i].DueDate.Before(a[j].DueDate) }
