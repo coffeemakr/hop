@@ -126,6 +126,33 @@ func CreateTaskForGroup(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+
+func UpdateTaskById(w http.ResponseWriter, r *http.Request) {
+	taskId := getTaskId(r)
+	ctx := r.Context()
+	var updateTask wedo.Task
+	err := json.NewDecoder(r.Body).Decode(&updateTask)
+	if err != nil {
+		http_error.ErrBadRequest.Cause(err).Write(w, r)
+		return
+	}
+	updateTask.ID = taskId
+	err = updateTaskById(ctx, &updateTask)
+	switch err {
+	case ErrNoSuchTask:
+		HttpErrTaskNotFound.Cause(err).Write(w, r)
+	case nil:
+		mustWriteJson(w, updateTask)
+	default:
+		http_error.ErrInternalServerError.Cause(err).Write(w, r)
+	}
+}
+
+func updateTaskById(ctx context.Context, task *wedo.Task) error {
+
+	return nil
+}
+
 func GetTaskById(w http.ResponseWriter, r *http.Request) {
 	taskId := getTaskId(r)
 	ctx := r.Context()
