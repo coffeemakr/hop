@@ -58,7 +58,7 @@ func getTaskByIdIncludingGroup(ctx context.Context, taskId string) (*wedo.Task, 
 
 	match := bson.D{{"$match", bson.D{{"id", taskId},}}}
 	opts := options.Aggregate().SetMaxTime(2 * time.Second)
-	cursor, err := taskCollection.Aggregate(ctx, mongo.Pipeline{match, lookupGroupForTask}, opts)
+	cursor, err := taskCollection.Aggregate(ctx, mongo.Pipeline{match, moveToTasks, lookupGroupForTask}, opts)
 	if err != nil {
 		log.Fatal(err)
 	}
