@@ -16,10 +16,11 @@ var (
 )
 
 type TaskExecution struct {
-	ID         string
-	ExecutorId int64
-	Executor   *User
-	Time       time.Time
+	ExecutorName string `json:"executor_id" bson:"executor_id"`
+	Executor     *User `json:"executor,omitempty" bson:"-"`
+	Time         time.Time `json:"time" bson:"time"`
+	TaskId       string `json:"task_id" bson:"task_id"`
+	Task         *Task  `json:"task,omitempty" bson:"-"`
 }
 
 type Interval struct {
@@ -52,8 +53,8 @@ type Task struct {
 	Interval      Interval       `json:"interval"`
 	LastExecution *TaskExecution `json:"last_execution,omitempty"`
 	GroupID       string         `json:"group_id,omitempty"`
-	Group         *Group         `json:"group,omitempty" bson:"-"`
-	Assignee      *User          `json:"assignee,omitempty" bson:"-"`
+	Group         *Group         `json:"group,omitempty"`
+	Assignee      *User          `json:"assignee,omitempty"`
 	AssigneeName  string         `json:"assignee_name,omitempty"`
 	DueDate       time.Time      `json:"due_date"`
 }

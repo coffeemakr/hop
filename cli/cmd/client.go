@@ -271,10 +271,14 @@ func (c *Client) JoinGroup(groupId string) error {
 	return nil
 }
 
-func (c *Client) CreateTaskForGroup(task *wedo.Task, groupId string) error {
+func (c *Client) CreateTask(task *wedo.Task) error {
 	token, err := c.Token()
 	if err != nil {
 		return err
+	}
+	groupId := task.GroupID
+	if groupId == "" {
+		return errors.New("group ID not set")
 	}
 	err = c.sendAndReceiveJson("POST", joinUrl("groups", groupId, "tasks"), token, task, task)
 	if err != nil {
@@ -301,3 +305,9 @@ func (c *Client) GetTaskDetails(taskId string) (*wedo.Task, error) {
 	}
 	return &task, nil
 }
+
+func (c *Client) CompleteTask(taskID string) (execution *wedo.TaskExecution, err error) {
+	err = c.receiveJsonAuthenticated("POST", joinUrl("tasks", taskID, "complete"), execution)
+	return
+}
+

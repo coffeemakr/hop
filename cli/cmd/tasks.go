@@ -33,9 +33,17 @@ var (
 		Run:   runAddTask,
 		Args:  cobra.ExactArgs(1),
 	}
-
 	taskAddOptionDaily, taskAddOptionWeekly, taskAddOptionMonthly, taskAddOptionYearly bool
 	taskAddOptionInterval                                                              uint32
+
+	taskDoneCommand = &cobra.Command{
+		Use:   "complete",
+		Short: "Complete a task",
+		Aliases: []string{"done"},
+		Run:   runCompleteTask,
+		Args:  cobra.ExactArgs(1),
+	}
+
 )
 
 func runTaskGet(cmd *cobra.Command, args []string) {
@@ -63,7 +71,7 @@ func init() {
 	taskAddCommand.PersistentFlags().BoolVarP(&taskAddOptionMonthly, "monthly", "m", false, "Repeat task monthly")
 	taskAddCommand.PersistentFlags().BoolVarP(&taskAddOptionYearly, "yearly", "y", false, "Repeat task yearly")
 	taskAddCommand.PersistentFlags().Uint32Var(&taskAddOptionInterval, "interval", 1, "Interval number e.g. X weeks when --weeks flag is used")
-	taskCommand.AddCommand(taskAddCommand, taskListCommand, taskGetCommand)
+	taskCommand.AddCommand(taskAddCommand, taskListCommand, taskGetCommand, taskDoneCommand)
 }
 
 func getDaysUntilTime(due time.Time) int {
@@ -94,8 +102,8 @@ func runTaskList(cmd *cobra.Command, args []string) {
 	}
 	sort.Sort(wedo.ByDueDate(tasks))
 	for _, task := range tasks {
-		shortId := task.ShortID()
-		fmt.Printf("%s %-40s %-20s %s\n", shortId, task.Name, task.AssigneeName, formatDue(task.DueDate))
+		ID := task.ID
+		fmt.Printf("%s %-40s %-20s %s\n", ID, task.Name, task.AssigneeName, formatDue(task.DueDate))
 	}
 }
 
@@ -147,6 +155,7 @@ func runAddTask(cmd *cobra.Command, args []string) {
 	task.Name = strings.TrimSpace(args[0])
 	task.Interval.Amount = taskAddOptionInterval
 	task.Interval.Unit, err = getIntervalUnit()
+	task.GroupID = defaultGroupId
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -156,9 +165,18 @@ func runAddTask(cmd *cobra.Command, args []string) {
 		log.Fatalln("no default group set")
 	}
 
-	err = client.CreateTaskForGroup(&task, defaultGroupId)
+	err = client.CreateTask(&task)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	fmt.Printf("Task created: %s\n", task)
+}
+
+func runCompleteTask(cmd *cobra.Command, args []string) {
+	taskId := args[0]
+	execution, err := client.CompleteTask(taskId)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	fmt.Printf("Task completed: %s\n", execution)
 }

@@ -15,11 +15,12 @@ var rootCommand = &cobra.Command{
 }
 
 var (
-	client *Client
-	proxyStr string = "http://localhost:9090"
+	client   *Client
+	proxyStr = "http://localhost:9090"
 )
+
 func init() {
-	rootCommand.AddCommand(doneCommand, loginCommand, registerCommand, completionCommand, groupCommand,
+	rootCommand.AddCommand(loginCommand, registerCommand, completionCommand, groupCommand,
 		taskCommand)
 
 	proxyURL, err := url.Parse(proxyStr)
@@ -28,8 +29,8 @@ func init() {
 	}
 
 	client = &Client{
-		BaseUrl:    "http://localhost:8080",
-		Client:     &http.Client{
+		BaseUrl: "http://localhost:8080",
+		Client: &http.Client{
 			Transport: &http.Transport{
 				Proxy: http.ProxyURL(proxyURL),
 			},

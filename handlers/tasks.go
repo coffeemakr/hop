@@ -4,13 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	http_error "github.com/coffeemakr/go-http-error"
 	"github.com/coffeemakr/wedo"
 	"github.com/gorilla/mux"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 	"math/rand"
 	"net/http"
@@ -22,21 +18,7 @@ var (
 	ErrMultipleTaskedMatched  = errors.New("multiple tasks matched")
 	HttpErrTaskNotFound       = http_error.NewHttpErrorType(http.StatusNotFound, "task not found")
 	HttpErrAssigneeNotInGroup = http_error.NewHttpErrorType(http.StatusBadRequest, "assignee not in group")
-	lookupGroupForTask        = bson.D{
-		{"$lookup", bson.D{
-			{"from", "groups"},
-			{"localField", "groupid"},
-			{"foreignField", "id"},
-			{"as", "group"},
-		}},
-	}
 )
-
-func createTask(ctx context.Context, task *wedo.Task) (err error) {
-	task.ID = generateId()
-	_, err = taskCollection.InsertOne(ctx, task)
-	return
-}
 
 func getGroupId(r *http.Request) string {
 	var vars = mux.Vars(r)
@@ -126,7 +108,6 @@ func CreateTaskForGroup(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
 func UpdateTaskById(w http.ResponseWriter, r *http.Request) {
 	taskId := getTaskId(r)
 	ctx := r.Context()
@@ -148,11 +129,6 @@ func UpdateTaskById(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func updateTaskById(ctx context.Context, task *wedo.Task) error {
-
-	return nil
-}
-
 func GetTaskById(w http.ResponseWriter, r *http.Request) {
 	taskId := getTaskId(r)
 	ctx := r.Context()
@@ -167,11 +143,25 @@ func GetTaskById(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func assignTaskToNextPerson(ctx context.Context, executorName string, task *wedo.Task) error {
+	// TODO: The one that executed the task should be put at the end of the queue
+	if task.AssigneeName == executorName {
+		task.AssignNext()
+	}
+	task.DueDate = task.Interval.Next(time.Now())
+	return updateTaskById(ctx, task)
+}
+
 func CreateTaskExecution(w http.ResponseWriter, r *http.Request) {
 	taskId := getTaskId(r)
+	userName, err := GetUserNameFromRequest(r)
+	if err != nil {
+		panic(err)
+	}
 	ctx := r.Context()
 	task, err := getTaskByIdIncludingGroup(ctx, taskId)
 	if err != nil {
+		log.Printf("Failed to load get task for execution: %s", err)
 		if err == ErrNoSuchTask {
 			HttpErrTaskNotFound.Cause(err).Write(w, r)
 		} else {
@@ -180,51 +170,21 @@ func CreateTaskExecution(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "Task execution! %s", task)
-}
-
-func getTaskByIdIncludingGroup(ctx context.Context, taskId string) (*wedo.Task, error) {
-	var task wedo.Task
-	match := bson.D{{"$match", bson.D{{"id", taskId},}}}
-	opts := options.Aggregate().SetMaxTime(2 * time.Second)
-	cursor, err := taskCollection.Aggregate(ctx, mongo.Pipeline{match, lookupGroupForTask}, opts)
-	if err != nil {
-		log.Fatal(err)
+	execution := wedo.TaskExecution{
+		ExecutorName: userName,
+		Time:         time.Now(),
+		TaskId:       taskId,
+		Task:         task,
 	}
-	if !cursor.Next(ctx) {
-		return nil, ErrNoSuchTask
-	}
-	err = cursor.Decode(&task)
-	if err != nil {
-		return nil, fmt.Errorf("decoding task failed: %s", err)
-	}
-	if cursor.Next(ctx) {
-		return nil, ErrMultipleTaskedMatched
-	}
-	log.Println("task", task)
-	return &task, nil
-}
-
-func getTasksForUser(ctx context.Context, userName string) (result []*wedo.Task, err error) {
-	match := bson.D{{"$match", bson.D{
-		{"group." + memberNamesField, bson.D{
-			{"$in", []string{userName}},
-		}},
-	}}}
-
-	cursor, err := taskCollection.Aggregate(ctx, mongo.Pipeline{lookupGroupForTask, match})
-	if err != nil {
+	if err := createTaskExecution(ctx, &execution); err != nil {
+		http_error.ErrInternalServerError.Cause(err).Write(w, r)
 		return
 	}
-	for cursor.Next(ctx) {
-		var task wedo.Task
-		err = cursor.Decode(&task)
-		if err != nil {
-			return
-		}
-		result = append(result, &task)
+
+	if err := assignTaskToNextPerson(ctx, userName, task); err != nil {
+		http_error.ErrInternalServerError.Cause(err).Write(w, r)
 	}
-	return result, nil
+	mustWriteJson(w, execution)
 }
 
 func GetAllTasks(w http.ResponseWriter, r *http.Request) {

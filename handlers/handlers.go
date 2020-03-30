@@ -14,16 +14,18 @@ import (
 )
 
 var (
-	taskCollection     *mongo.Collection
-	usersCollection    *mongo.Collection
-	groupsCollection   *mongo.Collection
-	ErrInvalidJsonBody = http_error.ErrBadRequest.WithDescription("Invalid JSON body")
+	taskCollection          *mongo.Collection
+	usersCollection         *mongo.Collection
+	groupsCollection        *mongo.Collection
+	taskExecutionCollection *mongo.Collection
+	ErrInvalidJsonBody      = http_error.ErrBadRequest.WithDescription("Invalid JSON body")
 )
 
 func SetDB(db *mongo.Database) {
 	taskCollection = db.Collection("tasks")
 	usersCollection = db.Collection("users")
 	groupsCollection = db.Collection("groups")
+	taskExecutionCollection = db.Collection("task_executions")
 	_, err := usersCollection.Indexes().CreateOne(context.TODO(), mongo.IndexModel{
 		Keys: bson.M{
 			"name": 1,
