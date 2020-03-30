@@ -307,6 +307,7 @@ func (c *Client) GetTaskDetails(taskId string) (*wedo.Task, error) {
 }
 
 func (c *Client) CompleteTask(taskID string) (execution *wedo.TaskExecution, err error) {
+	execution = new(wedo.TaskExecution)
 	err = c.receiveJsonAuthenticated("POST", joinUrl("tasks", taskID, "complete"), execution)
 	return
 }

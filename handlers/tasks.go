@@ -184,6 +184,7 @@ func CreateTaskExecution(w http.ResponseWriter, r *http.Request) {
 	if err := assignTaskToNextPerson(ctx, userName, task); err != nil {
 		http_error.ErrInternalServerError.Cause(err).Write(w, r)
 	}
+	log.Printf("Created task execution: %s\n", execution)
 	mustWriteJson(w, execution)
 }
 

@@ -13,11 +13,11 @@ import (
 
 type taskWithGroupModel struct {
 	Groups []*wedo.Group `bson:"groups"`
-	Task wedo.Task
+	Task   wedo.Task
 }
 
 var moveToTasks = bson.D{
-	{    "$replaceWith", bson.D{{"task", "$$ROOT"}} },
+	{"$replaceWith", bson.D{{"task", "$$ROOT"}}},
 }
 
 var lookupGroupForTask = bson.D{
@@ -39,7 +39,7 @@ func createTask(ctx context.Context, task *wedo.Task) (err error) {
 }
 
 func updateTaskById(ctx context.Context, task *wedo.Task) error {
-	updateResult, err := taskCollection.UpdateOne(ctx, bson.D{{"id", task.ID}}, task)
+	updateResult, err := taskCollection.UpdateOne(ctx, bson.D{{"id", task.ID}}, bson.D{{"$set", task}})
 	if err != nil {
 		return err
 	}
@@ -77,7 +77,6 @@ func getTaskByIdIncludingGroup(ctx context.Context, taskId string) (*wedo.Task, 
 }
 
 func decodeTaskWithGroup(cursor *mongo.Cursor) (*wedo.Task, error) {
-
 	var task *wedo.Task
 	var dbTask taskWithGroupModel
 	err := cursor.Decode(&dbTask)
