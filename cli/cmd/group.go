@@ -63,7 +63,7 @@ func getDefaultGroup() string {
 }
 
 func viperWriteOrCreateConfig() (err error){
-	const defaultConfigurationFile = "$HOME/.config/wedo-config.yml"
+	const defaultConfigurationFile = "$HOME/.config/amtli-config.yml"
 	path := os.ExpandEnv(defaultConfigurationFile)
 
 	fp, err := os.Create(path)

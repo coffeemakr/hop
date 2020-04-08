@@ -1,4 +1,4 @@
-package wedo
+package amtli
 
 import (
 	"fmt"
@@ -16,11 +16,11 @@ var (
 )
 
 type TaskExecution struct {
-	ExecutorName string `json:"executor_id" bson:"executor_id"`
-	Executor     *User `json:"executor,omitempty" bson:"-"`
+	ExecutorName string    `json:"executor_id" bson:"executor_id"`
+	Executor     *User     `json:"executor,omitempty" bson:"-"`
 	Time         time.Time `json:"time" bson:"time"`
-	TaskId       string `json:"task_id" bson:"task_id"`
-	Task         *Task  `json:"task,omitempty" bson:"-"`
+	TaskId       string    `json:"task_id" bson:"task_id"`
+	Task         *Task     `json:"task,omitempty" bson:"-"`
 }
 
 type Interval struct {

@@ -1,1 +1,1 @@
-docker exec -it wedo-mongo mongo --username wedo --password secret
+docker exec -it amtli-mongo mongo --username amtli --password secret

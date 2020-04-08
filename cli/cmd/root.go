@@ -2,45 +2,32 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var rootCommand = &cobra.Command{
-	Use: "wedo",
+	Use: "amtli",
 }
 
 var (
 	client   *Client
 	proxyStr = "http://localhost:9090"
+	baseUrl  = "http://localhost:8080"
 )
 
 func init() {
 	rootCommand.AddCommand(loginCommand, registerCommand, completionCommand, groupCommand,
 		taskCommand)
-
-	proxyURL, err := url.Parse(proxyStr)
-	if err != nil {
-		log.Println(err)
-	}
-
-	client = &Client{
-		BaseUrl: "http://localhost:8080",
-		Client: &http.Client{
-			Transport: &http.Transport{
-				Proxy: http.ProxyURL(proxyURL),
-			},
-		},
-		TokenStore: NewFileTokenStore(os.ExpandEnv("$HOME/.wedo-cred.txt")),
-	}
 }
 
 func Execute() {
-	viper.SetConfigName("wedo-config")
+	viper.SetConfigName("amtli-config")
 	viper.AddConfigPath("$HOME/.config")
 	err := viper.ReadInConfig()
 	if err != nil {
@@ -50,6 +37,26 @@ func Execute() {
 			fmt.Println(err)
 			os.Exit(2)
 		}
+	}
+
+	var transport *http.Transport
+
+	if proxyStr != "" {
+		proxyURL, err := url.Parse(proxyStr)
+		if err != nil {
+			log.Println(err)
+		}
+		transport = &http.Transport{
+			Proxy: http.ProxyURL(proxyURL),
+		}
+	}
+
+	client = &Client{
+		BaseUrl: baseUrl,
+		Client: &http.Client{
+			Transport: transport,
+		},
+		TokenStore: NewFileTokenStore(os.ExpandEnv("$HOME/.amtli-cred.txt")),
 	}
 
 	if err := rootCommand.Execute(); err != nil {

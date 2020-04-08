@@ -1,4 +1,4 @@
-module github.com/coffeemakr/wedo
+module github.com/coffeemakr/amtli
 
 go 1.14
 

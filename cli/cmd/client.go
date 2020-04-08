@@ -5,19 +5,21 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/coffeemakr/wedo"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
 	"path"
+
+	"github.com/coffeemakr/amtli"
 )
 
 var (
 	ErrNoTokenSaved = errors.New("no saved token")
-	ErrNotFound = errors.New("item not found")
+	ErrNotFound     = errors.New("item not found")
 )
+
 type TokenStore interface {
 	SaveToken(token string) error
 	GetToken() (string, error)
@@ -62,20 +64,20 @@ type Client struct {
 	BaseUrl    string
 	Client     *http.Client
 	TokenStore TokenStore
-	token string
+	token      string
 }
 
 func (c *Client) getUrl(relativeUrl string) string {
 	return c.BaseUrl + relativeUrl
 }
 
-func (c *Client) newRequest(method string, relativeUrl string, authenticationToken string, body io.Reader) (*http.Request, error){
+func (c *Client) newRequest(method string, relativeUrl string, authenticationToken string, body io.Reader) (*http.Request, error) {
 	req, err := http.NewRequest(method, c.getUrl(relativeUrl), body)
 	if err != nil {
 		return nil, err
 	}
 	if authenticationToken != "" {
-		req.Header.Set("Authorization", "Bearer " + authenticationToken)
+		req.Header.Set("Authorization", "Bearer "+authenticationToken)
 	}
 	return req, err
 }
@@ -162,8 +164,8 @@ func (c *Client) sendAndReceiveJson(method string, relativeUrl string, authentic
 	return nil
 }
 
-func (c *Client) Login(credentials *wedo.Credentials) error {
-	var authenticationResult wedo.AuthenticationResult
+func (c *Client) Login(credentials *amtli.Credentials) error {
+	var authenticationResult amtli.AuthenticationResult
 	err := c.sendAndReceiveJson("POST", "/login", "", credentials, &authenticationResult)
 	if err != nil {
 		return err
@@ -175,8 +177,8 @@ func (c *Client) Login(credentials *wedo.Credentials) error {
 	return nil
 }
 
-func (c *Client) Register(request *wedo.RegistrationRequest) (*wedo.User, error) {
-	var user wedo.User
+func (c *Client) Register(request *amtli.RegistrationRequest) (*amtli.User, error) {
+	var user amtli.User
 	err := c.sendAndReceiveJson("POST", "/register", "", request, &user)
 	return &user, err
 }
@@ -191,7 +193,7 @@ func (c *Client) LoadToken() error {
 }
 
 func (c *Client) CreateGroup(name string) error {
-	group := wedo.Group{
+	group := amtli.Group{
 		Name: name,
 	}
 	token, err := c.Token()
@@ -205,7 +207,7 @@ func (c *Client) CreateGroup(name string) error {
 	return nil
 }
 
-func (c *Client) ListGroup() (results []*wedo.Group, err error) {
+func (c *Client) ListGroup() (results []*amtli.Group, err error) {
 	err = c.receiveJsonAuthenticated("GET", "/groups", &results)
 	if err != nil {
 		return nil, err
@@ -229,8 +231,6 @@ func joinUrl(parts ...string) string {
 	}
 	return "/" + path.Join(parts...)
 }
-
-
 
 func (c *Client) send(method string, relativeUrl string, authenticationToken string) error {
 	request, err := c.newRequest(method, relativeUrl, authenticationToken, nil)
@@ -271,7 +271,7 @@ func (c *Client) JoinGroup(groupId string) error {
 	return nil
 }
 
-func (c *Client) CreateTask(task *wedo.Task) error {
+func (c *Client) CreateTask(task *amtli.Task) error {
 	token, err := c.Token()
 	if err != nil {
 		return err
@@ -287,7 +287,7 @@ func (c *Client) CreateTask(task *wedo.Task) error {
 	return nil
 }
 
-func (c *Client) GetTaskList() (tasks []*wedo.Task, err error) {
+func (c *Client) GetTaskList() (tasks []*amtli.Task, err error) {
 	err = c.receiveJsonAuthenticated("GET", "/tasks", &tasks)
 	if err != nil {
 		err = fmt.Errorf("failed to get list of tasks: %s", err)
@@ -295,8 +295,8 @@ func (c *Client) GetTaskList() (tasks []*wedo.Task, err error) {
 	return
 }
 
-func (c *Client) GetTaskDetails(taskId string) (*wedo.Task, error) {
-	var task wedo.Task
+func (c *Client) GetTaskDetails(taskId string) (*amtli.Task, error) {
+	var task amtli.Task
 	var err error
 	err = c.receiveJsonAuthenticated("GET", joinUrl("tasks", taskId), &task)
 	if err != nil {
@@ -306,9 +306,8 @@ func (c *Client) GetTaskDetails(taskId string) (*wedo.Task, error) {
 	return &task, nil
 }
 
-func (c *Client) CompleteTask(taskID string) (execution *wedo.TaskExecution, err error) {
-	execution = new(wedo.TaskExecution)
+func (c *Client) CompleteTask(taskID string) (execution *amtli.TaskExecution, err error) {
+	execution = new(amtli.TaskExecution)
 	err = c.receiveJsonAuthenticated("POST", joinUrl("tasks", taskID, "complete"), execution)
 	return
 }
-

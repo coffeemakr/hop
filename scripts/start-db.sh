@@ -1,1 +1,1 @@
-docker run -d -p 127.0.0.1:27017:27017 --name wedo-mongo  -e MONGO_INITDB_ROOT_USERNAME=wedo -e MONGO_INITDB_ROOT_PASSWORD=secret mongo
+docker run -d -p 127.0.0.1:27017:27017 --name amtli-mongo  -e MONGO_INITDB_ROOT_USERNAME=amtli -e MONGO_INITDB_ROOT_PASSWORD=secret mongo

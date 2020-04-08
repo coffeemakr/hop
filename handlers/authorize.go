@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"github.com/coffeemakr/wedo"
+	"github.com/coffeemakr/amtli"
 	"github.com/square/go-jose/v3"
 	"github.com/square/go-jose/v3/jwt"
 	"time"
@@ -17,9 +17,9 @@ type JwtTokenVerifier struct {
 	KeySet *jose.JSONWebKeySet
 }
 
-func (v *JwtTokenVerifier) VerifyToken(rawToken string) (*wedo.DecodedToken, error) {
+func (v *JwtTokenVerifier) VerifyToken(rawToken string) (*amtli.DecodedToken, error) {
 	var claims jwt.Claims
-	var result wedo.DecodedToken
+	var result amtli.DecodedToken
 	token, err := jwt.ParseSigned(rawToken)
 	if err != nil {
 		return nil, err
@@ -33,7 +33,7 @@ func (v *JwtTokenVerifier) VerifyToken(rawToken string) (*wedo.DecodedToken, err
 	return &result, nil
 }
 
-func (i JwtTokenIssuer) IssueToken(decodedToken *wedo.DecodedToken) (string, error) {
+func (i JwtTokenIssuer) IssueToken(decodedToken *amtli.DecodedToken) (string, error) {
 	signer, err := jose.NewSigner(jose.SigningKey{Algorithm: jose.RS256, Key: i.PrivateKey}, nil)
 	if err != nil {
 		return "", nil

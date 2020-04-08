@@ -3,7 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"github.com/coffeemakr/wedo"
+	"github.com/coffeemakr/amtli"
 	"github.com/spf13/cobra"
 	"log"
 	"os"
@@ -48,7 +48,7 @@ var (
 
 func runTaskGet(cmd *cobra.Command, args []string) {
 	taskId := args[0]
-	var task *wedo.Task
+	var task *amtli.Task
 	task, err := client.GetTaskDetails(taskId)
 	if err != nil {
 		log.Fatalln(err)
@@ -100,14 +100,14 @@ func runTaskList(cmd *cobra.Command, args []string) {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	sort.Sort(wedo.ByDueDate(tasks))
+	sort.Sort(amtli.ByDueDate(tasks))
 	for _, task := range tasks {
 		ID := task.ID
 		fmt.Printf("%s %-40s %-20s %s\n", ID, task.Name, task.AssigneeName, formatDue(task.DueDate))
 	}
 }
 
-func getIntervalUnit() (unit wedo.IntervalUnit, err error) {
+func getIntervalUnit() (unit amtli.IntervalUnit, err error) {
 	var bits int
 	const (
 		DailyBit   = 1 << 0
@@ -130,13 +130,13 @@ func getIntervalUnit() (unit wedo.IntervalUnit, err error) {
 	}
 	switch bits {
 	case YearlyBit:
-		unit = wedo.Years
+		unit = amtli.Years
 	case MonthlyBit:
-		unit = wedo.Months
+		unit = amtli.Months
 	case WeeklyBit:
-		unit = wedo.Weeks
+		unit = amtli.Weeks
 	case DailyBit:
-		unit = wedo.Days
+		unit = amtli.Days
 	case 0:
 		err = errors.New("require at least one of weekly, daily, monthly or yearly flags")
 	default:
@@ -148,7 +148,7 @@ func getIntervalUnit() (unit wedo.IntervalUnit, err error) {
 func runAddTask(cmd *cobra.Command, args []string) {
 	var (
 		defaultGroupId = getDefaultGroup()
-		task           wedo.Task
+		task           amtli.Task
 		err            error
 	)
 

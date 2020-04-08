@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	http_error "github.com/coffeemakr/go-http-error"
-	"github.com/coffeemakr/wedo"
+	"github.com/coffeemakr/amtli"
 	"github.com/gorilla/mux"
 	"log"
 	"math/rand"
@@ -54,8 +54,8 @@ func stringArrayContain(s []string, e string) bool {
 
 func CreateTaskForGroup(w http.ResponseWriter, r *http.Request) {
 	var (
-		task  wedo.Task
-		group *wedo.Group
+		task  amtli.Task
+		group *amtli.Group
 		err   error
 		ctx   = r.Context()
 	)
@@ -85,10 +85,10 @@ func CreateTaskForGroup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch task.Interval.Unit {
-	case wedo.Days:
-	case wedo.Months:
-	case wedo.Years:
-	case wedo.Weeks:
+	case amtli.Days:
+	case amtli.Months:
+	case amtli.Years:
+	case amtli.Weeks:
 	// Ok
 	default:
 		http_error.ErrBadRequest.CauseString("Invalid interval unit").Write(w, r)
@@ -111,7 +111,7 @@ func CreateTaskForGroup(w http.ResponseWriter, r *http.Request) {
 func UpdateTaskById(w http.ResponseWriter, r *http.Request) {
 	taskId := getTaskId(r)
 	ctx := r.Context()
-	var updateTask wedo.Task
+	var updateTask amtli.Task
 	err := json.NewDecoder(r.Body).Decode(&updateTask)
 	if err != nil {
 		http_error.ErrBadRequest.Cause(err).Write(w, r)
@@ -143,7 +143,7 @@ func GetTaskById(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func assignTaskToNextPerson(ctx context.Context, executorName string, task *wedo.Task) error {
+func assignTaskToNextPerson(ctx context.Context, executorName string, task *amtli.Task) error {
 	// TODO: The one that executed the task should be put at the end of the queue
 	if task.AssigneeName == executorName {
 		task.AssignNext()
@@ -170,7 +170,7 @@ func CreateTaskExecution(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	execution := wedo.TaskExecution{
+	execution := amtli.TaskExecution{
 		ExecutorName: userName,
 		Time:         time.Now(),
 		TaskId:       taskId,

@@ -1,4 +1,4 @@
-package wedo
+package amtli
 
 type Credentials struct {
 	Name     string

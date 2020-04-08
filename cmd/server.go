@@ -3,9 +3,6 @@ package main
 import (
 	"context"
 	"encoding/binary"
-	"github.com/coffeemakr/wedo/handlers"
-	"github.com/gorilla/mux"
-	"github.com/square/go-jose/v3"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -13,11 +10,16 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/coffeemakr/amtli/handlers"
+	"github.com/gorilla/mux"
+	"github.com/square/go-jose/v3"
+
 	crypto_rand "crypto/rand"
+	math_rand "math/rand"
+
 	"github.com/spf13/cobra"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	math_rand "math/rand"
 )
 
 var (
@@ -92,6 +94,7 @@ func securelySeed() {
 
 func main() {
 	securelySeed()
+
 	key, err := loadPrivateKey()
 	if err != nil {
 		log.Fatal(err)

@@ -10,9 +10,9 @@ import (
 )
 
 const (
-	bearerTokenPrefix            = "Bearer "
-	httpHeaderAuthorization = "Authorization"
-	ContextUserName   ContextKey = "userID"
+	bearerTokenPrefix                  = "Bearer "
+	httpHeaderAuthorization            = "Authorization"
+	ContextUserName         ContextKey = "userID"
 )
 
 type ContextKey string

@@ -3,7 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"github.com/coffeemakr/wedo"
+	"github.com/coffeemakr/amtli"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh/terminal"
 	"log"
@@ -32,8 +32,8 @@ func readPlainText() (text string, err error) {
 	return
 }
 
-func readCredentials() (*wedo.Credentials, error) {
-	var credentials wedo.Credentials
+func readCredentials() (*amtli.Credentials, error) {
+	var credentials amtli.Credentials
 	var err error
 	fmt.Print("Name    : ")
 	credentials.Name, err = readPlainText()

@@ -3,7 +3,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"github.com/coffeemakr/wedo"
+	"github.com/coffeemakr/amtli"
 	"github.com/spf13/cobra"
 	"log"
 )
@@ -13,7 +13,7 @@ var registerCommand  = &cobra.Command{
 	Run: runRegister,
 }
 
-func readRegistration() (*wedo.RegistrationRequest, error) {
+func readRegistration() (*amtli.RegistrationRequest, error) {
 	var passwordsAreValid bool
 	var password, passwordConfirmation []byte
 	fmt.Print("Name                  :")
@@ -49,7 +49,7 @@ func readRegistration() (*wedo.RegistrationRequest, error) {
 		}
 		passwordsAreValid = true
 	}
-	return &wedo.RegistrationRequest{
+	return &amtli.RegistrationRequest{
 		Name:                 name,
 		Email:                email,
 		Password:             password,

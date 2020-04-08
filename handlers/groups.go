@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	http_error "github.com/coffeemakr/go-http-error"
-	"github.com/coffeemakr/wedo"
+	"github.com/coffeemakr/amtli"
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -27,7 +27,7 @@ func CreateGroup(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-	var group wedo.Group
+	var group amtli.Group
 	if err := json.NewDecoder(r.Body).Decode(&group); err != nil {
 		ErrInvalidJsonBody.Cause(err).Write(w, r)
 		return
@@ -146,7 +146,7 @@ func deleteGroupForUser(ctx context.Context, groupId string, userName string) er
 	return err
 }
 
-func createGroup(ctx context.Context, group *wedo.Group) error {
+func createGroup(ctx context.Context, group *amtli.Group) error {
 	_, err := groupsCollection.InsertOne(ctx, group)
 	if err != nil {
 		return err
@@ -154,10 +154,10 @@ func createGroup(ctx context.Context, group *wedo.Group) error {
 	return nil
 }
 
-func getGroupForUser(ctx context.Context, groupId string, userName string) (*wedo.Group, error) {
-	var group wedo.Group
+func getGroupForUser(ctx context.Context, groupId string, userName string) (*amtli.Group, error) {
+	var group amtli.Group
 	err := groupsCollection.FindOne(ctx, bson.M{
-		"id": groupId,
+		"id":             groupId,
 		memberNamesField: bson.M{"$in": []string{userName}},
 	}).Decode(&group)
 	if err != nil {
@@ -170,8 +170,8 @@ func getGroupForUser(ctx context.Context, groupId string, userName string) (*wed
 	return &group, nil
 }
 
-func getGroups(ctx context.Context, userName string) ([]*wedo.Group, error) {
-	var results []*wedo.Group
+func getGroups(ctx context.Context, userName string) ([]*amtli.Group, error) {
+	var results []*amtli.Group
 	cursor, err := groupsCollection.Find(ctx, bson.M{
 		memberNamesField: bson.M{"$in": []string{userName}},
 	})
@@ -182,7 +182,7 @@ func getGroups(ctx context.Context, userName string) ([]*wedo.Group, error) {
 
 	for cursor.Next(ctx) {
 		log.Println(cursor.Current)
-		var group wedo.Group
+		var group amtli.Group
 		err := cursor.Decode(&group)
 		if err != nil {
 			return nil, err

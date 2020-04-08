@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	httperrors "github.com/coffeemakr/go-http-error"
-	"github.com/coffeemakr/wedo"
+	"github.com/coffeemakr/amtli"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
@@ -24,9 +24,9 @@ var (
 const userFieldName = "name"
 
 func LoginUser(w http.ResponseWriter, r *http.Request) {
-	var user *wedo.User
-	var result *wedo.AuthenticationResult
-	var credentials wedo.Credentials
+	var user *amtli.User
+	var result *amtli.AuthenticationResult
+	var credentials amtli.Credentials
 	var ctx = r.Context()
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
 		ErrInvalidJsonBody.Cause(err).Write(w, r)
@@ -49,9 +49,9 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		panic("token issuer is nil")
 	}
 
-	token, err := UsedTokenIssuer.IssueToken(&wedo.DecodedToken{UserName: user.Name})
+	token, err := UsedTokenIssuer.IssueToken(&amtli.DecodedToken{UserName: user.Name})
 
-	result = &wedo.AuthenticationResult{
+	result = &amtli.AuthenticationResult{
 		Token: token,
 		User:  user,
 	}
@@ -63,8 +63,8 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func RegisterUser(w http.ResponseWriter, r *http.Request) {
-	var user *wedo.User
-	var registrationRequest wedo.RegistrationRequest
+	var user *amtli.User
+	var registrationRequest amtli.RegistrationRequest
 	var ctx = r.Context()
 	if err := json.NewDecoder(r.Body).Decode(&registrationRequest); err != nil {
 		ErrInvalidJsonBody.Cause(err).Write(w, r)
@@ -88,14 +88,14 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func createUser(ctx context.Context, user *wedo.User)  (err error) {
+func createUser(ctx context.Context, user *amtli.User) (err error) {
 	_, err = usersCollection.InsertOne(ctx, user)
 	user.PasswordHash = nil // Prevent hash from leaking
 	return
 }
 
-func getUserWithPasswordForName(ctx context.Context, name string) (*wedo.User, error) {
-	var user wedo.User
+func getUserWithPasswordForName(ctx context.Context, name string) (*amtli.User, error) {
+	var user amtli.User
 	err := usersCollection.FindOne(ctx, bson.M{userFieldName: name}).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -106,7 +106,7 @@ func getUserWithPasswordForName(ctx context.Context, name string) (*wedo.User, e
 	return &user, nil
 }
 
-func getUserForName(ctx context.Context, name string) (user *wedo.User, err error) {
+func getUserForName(ctx context.Context, name string) (user *amtli.User, err error) {
 	user, err = getUserWithPasswordForName(ctx, name)
 	if err != nil {
 		return nil, err
@@ -115,7 +115,7 @@ func getUserForName(ctx context.Context, name string) (user *wedo.User, err erro
 	return user, err
 }
 
-func getUserForCredentials(ctx context.Context, credentials *wedo.Credentials) (user *wedo.User, err error) {
+func getUserForCredentials(ctx context.Context, credentials *amtli.Credentials) (user *amtli.User, err error) {
 	user, err = getUserWithPasswordForName(ctx, credentials.Name)
 	if err != nil {
 		return
@@ -130,12 +130,12 @@ func getUserForCredentials(ctx context.Context, credentials *wedo.Credentials) (
 	return
 }
 
-func registerUser(ctx context.Context, registration *wedo.RegistrationRequest) (user *wedo.User, err error) {
+func registerUser(ctx context.Context, registration *amtli.RegistrationRequest) (user *amtli.User, err error) {
 	hashed, err := bcrypt.GenerateFromPassword(registration.Password, bcryptCost)
 	if err != nil {
 		return
 	}
-	user = &wedo.User{
+	user = &amtli.User{
 		Name:          registration.Name,
 		EmailAddress:  registration.Email,
 		EmailVerified: false,
