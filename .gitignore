@@ -1,5 +1,5 @@
 .idea/
-jwk*.json
+private*.json
 
 # Binaries for programs and plugins
 *.exe
