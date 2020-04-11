@@ -12,6 +12,7 @@ import (
 	crypto_rand "crypto/rand"
 	math_rand "math/rand"
 
+	"github.com/coffeemakr/ruck/server"
 	"github.com/coffeemakr/ruck/server/handlers"
 	"github.com/gorilla/mux"
 	"github.com/spf13/cobra"
@@ -24,9 +25,9 @@ import (
 var (
 	serverHTTPPort = 8080
 	serverHTTPHost = "127.0.0.1"
-	serverConfig   = Configuration{
-		Listen:   &ListenConfig{},
-		Database: &DatabaseConfig{},
+	serverConfig   = server.Configuration{
+		Listen:   &server.ListenConfig{},
+		Database: &server.DatabaseConfig{},
 	}
 	authenticator *handlers.Authenticator
 	config        *viper.Viper
