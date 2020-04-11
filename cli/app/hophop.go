@@ -1,6 +1,6 @@
 package main
 
-import "github.com/coffeemakr/amtli/cli/cmd"
+import "github.com/coffeemakr/ruck/cli/cmd"
 
 func main() {
 	cmd.Execute()

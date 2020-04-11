@@ -1,9 +1,9 @@
-module github.com/coffeemakr/amtli/cli
+module github.com/coffeemakr/ruck/cli
 
 go 1.14
 
 require (
-	github.com/coffeemakr/amtli v0.0.0
+	github.com/coffeemakr/ruck v0.0.0
 	github.com/coffeemakr/go-http-error v1.3.0
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/mitchellh/mapstructure v1.2.2 // indirect
@@ -21,4 +21,4 @@ require (
 	gopkg.in/yaml.v2 v2.2.8 // indirect
 )
 
-replace github.com/coffeemakr/amtli => ../
+replace github.com/coffeemakr/ruck => ../

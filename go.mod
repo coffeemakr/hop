@@ -1,4 +1,4 @@
-module github.com/coffeemakr/amtli
+module github.com/coffeemakr/ruck
 
 go 1.14
 

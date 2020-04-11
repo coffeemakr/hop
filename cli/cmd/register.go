@@ -3,7 +3,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"github.com/coffeemakr/amtli"
+	"github.com/coffeemakr/ruck"
 	"github.com/spf13/cobra"
 	"log"
 )
@@ -13,7 +13,7 @@ var registerCommand  = &cobra.Command{
 	Run: runRegister,
 }
 
-func readRegistration() (*amtli.RegistrationRequest, error) {
+func readRegistration() (*ruck.RegistrationRequest, error) {
 	var passwordsAreValid bool
 	var password, passwordConfirmation []byte
 	fmt.Print("Name                  :")
@@ -49,7 +49,7 @@ func readRegistration() (*amtli.RegistrationRequest, error) {
 		}
 		passwordsAreValid = true
 	}
-	return &amtli.RegistrationRequest{
+	return &ruck.RegistrationRequest{
 		Name:                 name,
 		Email:                email,
 		Password:             password,

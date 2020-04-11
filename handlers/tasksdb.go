@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"github.com/coffeemakr/amtli"
+	"github.com/coffeemakr/ruck"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -12,8 +12,8 @@ import (
 )
 
 type taskWithGroupModel struct {
-	Groups []*amtli.Group `bson:"groups"`
-	Task   amtli.Task
+	Groups []*ruck.Group `bson:"groups"`
+	Task   ruck.Task
 }
 
 var moveToTasks = bson.D{
@@ -29,7 +29,7 @@ var lookupGroupForTask = bson.D{
 	}},
 }
 
-func createTask(ctx context.Context, task *amtli.Task) (err error) {
+func createTask(ctx context.Context, task *ruck.Task) (err error) {
 	task.ID = generateId()
 	var taskToStore = *task
 	taskToStore.Group = nil
@@ -38,7 +38,7 @@ func createTask(ctx context.Context, task *amtli.Task) (err error) {
 	return
 }
 
-func updateTaskById(ctx context.Context, task *amtli.Task) error {
+func updateTaskById(ctx context.Context, task *ruck.Task) error {
 	updateResult, err := taskCollection.UpdateOne(ctx, bson.D{{"id", task.ID}}, bson.D{{"$set", task}})
 	if err != nil {
 		return err
@@ -49,12 +49,12 @@ func updateTaskById(ctx context.Context, task *amtli.Task) error {
 	return nil
 }
 
-func createTaskExecution(ctx context.Context, execution *amtli.TaskExecution) error {
+func createTaskExecution(ctx context.Context, execution *ruck.TaskExecution) error {
 	_, err := taskExecutionCollection.InsertOne(ctx, execution)
 	return err
 }
 
-func getTaskByIdIncludingGroup(ctx context.Context, taskId string) (*amtli.Task, error) {
+func getTaskByIdIncludingGroup(ctx context.Context, taskId string) (*ruck.Task, error) {
 
 	match := bson.D{{"$match", bson.D{{"id", taskId}}}}
 	opts := options.Aggregate().SetMaxTime(2 * time.Second)
@@ -76,8 +76,8 @@ func getTaskByIdIncludingGroup(ctx context.Context, taskId string) (*amtli.Task,
 	return task, nil
 }
 
-func decodeTaskWithGroup(cursor *mongo.Cursor) (*amtli.Task, error) {
-	var task *amtli.Task
+func decodeTaskWithGroup(cursor *mongo.Cursor) (*ruck.Task, error) {
+	var task *ruck.Task
 	var dbTask taskWithGroupModel
 	err := cursor.Decode(&dbTask)
 	if err != nil {
@@ -88,7 +88,7 @@ func decodeTaskWithGroup(cursor *mongo.Cursor) (*amtli.Task, error) {
 	return task, nil
 }
 
-func getTasksForUser(ctx context.Context, userName string) (result []*amtli.Task, err error) {
+func getTasksForUser(ctx context.Context, userName string) (result []*ruck.Task, err error) {
 	match := bson.D{{"$match", bson.D{
 		{"groups." + memberNamesField, bson.D{
 			{"$in", []string{userName}},

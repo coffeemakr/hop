@@ -12,7 +12,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/coffeemakr/amtli"
+	"github.com/coffeemakr/ruck"
 )
 
 var (
@@ -164,8 +164,8 @@ func (c *Client) sendAndReceiveJson(method string, relativeUrl string, authentic
 	return nil
 }
 
-func (c *Client) Login(credentials *amtli.Credentials) error {
-	var authenticationResult amtli.AuthenticationResult
+func (c *Client) Login(credentials *ruck.Credentials) error {
+	var authenticationResult ruck.AuthenticationResult
 	err := c.sendAndReceiveJson("POST", "/login", "", credentials, &authenticationResult)
 	if err != nil {
 		return err
@@ -177,8 +177,8 @@ func (c *Client) Login(credentials *amtli.Credentials) error {
 	return nil
 }
 
-func (c *Client) Register(request *amtli.RegistrationRequest) (*amtli.User, error) {
-	var user amtli.User
+func (c *Client) Register(request *ruck.RegistrationRequest) (*ruck.User, error) {
+	var user ruck.User
 	err := c.sendAndReceiveJson("POST", "/register", "", request, &user)
 	return &user, err
 }
@@ -193,7 +193,7 @@ func (c *Client) LoadToken() error {
 }
 
 func (c *Client) CreateGroup(name string) error {
-	group := amtli.Group{
+	group := ruck.Group{
 		Name: name,
 	}
 	token, err := c.Token()
@@ -207,7 +207,7 @@ func (c *Client) CreateGroup(name string) error {
 	return nil
 }
 
-func (c *Client) ListGroup() (results []*amtli.Group, err error) {
+func (c *Client) ListGroup() (results []*ruck.Group, err error) {
 	err = c.receiveJsonAuthenticated("GET", "/groups", &results)
 	if err != nil {
 		return nil, err
@@ -271,7 +271,7 @@ func (c *Client) JoinGroup(groupId string) error {
 	return nil
 }
 
-func (c *Client) CreateTask(task *amtli.Task) error {
+func (c *Client) CreateTask(task *ruck.Task) error {
 	token, err := c.Token()
 	if err != nil {
 		return err
@@ -287,7 +287,7 @@ func (c *Client) CreateTask(task *amtli.Task) error {
 	return nil
 }
 
-func (c *Client) GetTaskList() (tasks []*amtli.Task, err error) {
+func (c *Client) GetTaskList() (tasks []*ruck.Task, err error) {
 	err = c.receiveJsonAuthenticated("GET", "/tasks", &tasks)
 	if err != nil {
 		err = fmt.Errorf("failed to get list of tasks: %s", err)
@@ -295,8 +295,8 @@ func (c *Client) GetTaskList() (tasks []*amtli.Task, err error) {
 	return
 }
 
-func (c *Client) GetTaskDetails(taskId string) (*amtli.Task, error) {
-	var task amtli.Task
+func (c *Client) GetTaskDetails(taskId string) (*ruck.Task, error) {
+	var task ruck.Task
 	var err error
 	err = c.receiveJsonAuthenticated("GET", joinUrl("tasks", taskId), &task)
 	if err != nil {
@@ -306,8 +306,8 @@ func (c *Client) GetTaskDetails(taskId string) (*amtli.Task, error) {
 	return &task, nil
 }
 
-func (c *Client) CompleteTask(taskID string) (execution *amtli.TaskExecution, err error) {
-	execution = new(amtli.TaskExecution)
+func (c *Client) CompleteTask(taskID string) (execution *ruck.TaskExecution, err error) {
+	execution = new(ruck.TaskExecution)
 	err = c.receiveJsonAuthenticated("POST", joinUrl("tasks", taskID, "complete"), execution)
 	return
 }

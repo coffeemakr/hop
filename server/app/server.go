@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/coffeemakr/amtli/server/cmd"
+	"github.com/coffeemakr/ruck/server/cmd"
 )
 
 func main() {

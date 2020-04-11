@@ -1,4 +1,4 @@
-package amtli
+package ruck
 
 type Credentials struct {
 	Name     string

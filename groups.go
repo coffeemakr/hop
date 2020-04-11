@@ -1,4 +1,4 @@
-package amtli
+package ruck
 
 type Group struct {
 	ID          string

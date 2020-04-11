@@ -12,7 +12,7 @@ import (
 )
 
 var rootCommand = &cobra.Command{
-	Use: "amtli",
+	Use: "ruck",
 }
 
 var (
@@ -27,7 +27,7 @@ func init() {
 }
 
 func Execute() {
-	viper.SetConfigName("amtli-config")
+	viper.SetConfigName("ruck-config")
 	viper.AddConfigPath("$HOME/.config")
 	err := viper.ReadInConfig()
 	if err != nil {
@@ -56,7 +56,7 @@ func Execute() {
 		Client: &http.Client{
 			Transport: transport,
 		},
-		TokenStore: NewFileTokenStore(os.ExpandEnv("$HOME/.amtli-cred.txt")),
+		TokenStore: NewFileTokenStore(os.ExpandEnv("$HOME/.ruck-cred.txt")),
 	}
 
 	if err := rootCommand.Execute(); err != nil {

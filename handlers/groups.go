@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	http_error "github.com/coffeemakr/go-http-error"
-	"github.com/coffeemakr/amtli"
+	"github.com/coffeemakr/ruck"
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -27,7 +27,7 @@ func CreateGroup(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-	var group amtli.Group
+	var group ruck.Group
 	if err := json.NewDecoder(r.Body).Decode(&group); err != nil {
 		ErrInvalidJsonBody.Cause(err).Write(w, r)
 		return
@@ -146,7 +146,7 @@ func deleteGroupForUser(ctx context.Context, groupId string, userName string) er
 	return err
 }
 
-func createGroup(ctx context.Context, group *amtli.Group) error {
+func createGroup(ctx context.Context, group *ruck.Group) error {
 	_, err := groupsCollection.InsertOne(ctx, group)
 	if err != nil {
 		return err
@@ -154,8 +154,8 @@ func createGroup(ctx context.Context, group *amtli.Group) error {
 	return nil
 }
 
-func getGroupForUser(ctx context.Context, groupId string, userName string) (*amtli.Group, error) {
-	var group amtli.Group
+func getGroupForUser(ctx context.Context, groupId string, userName string) (*ruck.Group, error) {
+	var group ruck.Group
 	err := groupsCollection.FindOne(ctx, bson.M{
 		"id":             groupId,
 		memberNamesField: bson.M{"$in": []string{userName}},
@@ -170,8 +170,8 @@ func getGroupForUser(ctx context.Context, groupId string, userName string) (*amt
 	return &group, nil
 }
 
-func getGroups(ctx context.Context, userName string) ([]*amtli.Group, error) {
-	var results []*amtli.Group
+func getGroups(ctx context.Context, userName string) ([]*ruck.Group, error) {
+	var results []*ruck.Group
 	cursor, err := groupsCollection.Find(ctx, bson.M{
 		memberNamesField: bson.M{"$in": []string{userName}},
 	})
@@ -182,7 +182,7 @@ func getGroups(ctx context.Context, userName string) ([]*amtli.Group, error) {
 
 	for cursor.Next(ctx) {
 		log.Println(cursor.Current)
-		var group amtli.Group
+		var group ruck.Group
 		err := cursor.Decode(&group)
 		if err != nil {
 			return nil, err

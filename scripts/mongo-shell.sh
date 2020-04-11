@@ -1,1 +1,1 @@
-docker exec -it amtli-mongo mongo --username amtli --password secret
+docker exec -it ruck-mongo mongo --username ruck --password secret

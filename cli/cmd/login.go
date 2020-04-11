@@ -3,7 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"github.com/coffeemakr/amtli"
+	"github.com/coffeemakr/ruck"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh/terminal"
 	"log"
@@ -32,8 +32,8 @@ func readPlainText() (text string, err error) {
 	return
 }
 
-func readCredentials() (*amtli.Credentials, error) {
-	var credentials amtli.Credentials
+func readCredentials() (*ruck.Credentials, error) {
+	var credentials ruck.Credentials
 	var err error
 	fmt.Print("Name    : ")
 	credentials.Name, err = readPlainText()
