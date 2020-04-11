@@ -22,8 +22,8 @@ var (
 )
 
 func init() {
-	rootCommand.AddCommand(loginCommand, registerCommand, completionCommand, groupCommand,
-		taskCommand)
+	rootCommand.AddCommand(loginCommand, registerCommand, completionCommand, groupCommand, taskCommand)
+	rootCommand.PersistentFlags().StringVar(&proxyStr, "proxy", "", "Proxy URL (e.g. http://localhost:8080)")
 }
 
 func Execute() {
@@ -39,7 +39,7 @@ func Execute() {
 		}
 	}
 
-	var transport *http.Transport
+	var transport http.RoundTripper = http.DefaultClient.Transport
 
 	if proxyStr != "" {
 		proxyURL, err := url.Parse(proxyStr)
