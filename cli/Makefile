@@ -1,7 +1,7 @@
 DESTDIR=dist
-BINARY=$(DESTDIR)/hophop
+BINARY=$(DESTDIR)/ruck
 
-MAIN=app/hophop.go
+MAIN=app/ruck.go
 SOURCES+=$(wildcard cmd/*.go) $(wildcard ../*.go)
 
 .PHONY: all

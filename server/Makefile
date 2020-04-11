@@ -1,7 +1,7 @@
 DESTDIR=dist
-BINARY=$(DESTDIR)/server
+BINARY=$(DESTDIR)/ruckd
 
-MAIN=app/server.go
+MAIN=app/ruckd.go
 SOURCES+=$(wildcard cmd/*.go) $(wildcard ../*.go)
 .PHONY: all
 all: $(BINARY)
