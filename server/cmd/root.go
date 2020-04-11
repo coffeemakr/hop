@@ -11,7 +11,7 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(generateKeysCommand, serverCommand)
+	rootCmd.AddCommand(generateKeysCommand, generateConfigCommand, serverCommand)
 }
 
 func Execute() error {

@@ -13,7 +13,7 @@ import (
 	crypto_rand "crypto/rand"
 	math_rand "math/rand"
 
-	"github.com/coffeemakr/ruck/handlers"
+	"github.com/coffeemakr/ruck/server/handlers"
 	"github.com/gorilla/mux"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
