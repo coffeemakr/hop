@@ -1,5 +1,7 @@
 .idea/
 private*.json
+*.yaml
+*.yml
 
 # Binaries for programs and plugins
 *.exe

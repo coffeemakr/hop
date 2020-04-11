@@ -1,1 +1,1 @@
-docker run -d -p 127.0.0.1:27017:27017 --name ruck-mongo  -e MONGO_INITDB_ROOT_USERNAME=ruck -e MONGO_INITDB_ROOT_PASSWORD=secret mongo
+docker run -d -p 127.0.0.1:27017:27017 --name ruck-mongo  -e MONGO_INITDB_ROOT_USERNAME=ruck -e MONGO_INITDB_ROOT_PASSWORD=secret ruck

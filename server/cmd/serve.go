@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	crypto_rand "crypto/rand"
@@ -25,28 +24,51 @@ import (
 var (
 	serverHTTPPort = 8080
 	serverHTTPHost = "127.0.0.1"
-	databaseURL    = "mongodb://wedo:secret@localhost:27017"
-	authenticator  *handlers.Authenticator
-
+	serverConfig   = Configuration{
+		Listen:   &ListenConfig{},
+		Database: &DatabaseConfig{},
+	}
+	authenticator *handlers.Authenticator
+	config        *viper.Viper
 	serverCommand = &cobra.Command{
-		Use:  "serve",
-		RunE: runServer,
+		Use:     "serve",
+		PreRunE: initConfig,
+		RunE:    runServer,
 	}
 )
 
-func init() {
-	serverCommand.PersistentFlags().IntVar(&serverHTTPPort, "http-port", serverHTTPPort, "The port to listen on")
-	serverCommand.PersistentFlags().StringVar(&serverHTTPHost, "http-host", serverHTTPHost, "The host to listen on")
-	serverCommand.PersistentFlags().StringVar(&databaseURL, "database-url", databaseURL, "The host to listen on")
-
-	viper.BindPFlag("listen.port", serverCommand.PersistentFlags().Lookup("http-port"))
-	viper.BindPFlag("listen.host", serverCommand.PersistentFlags().Lookup("http-host"))
-	viper.BindPFlag("database.url", serverCommand.PersistentFlags().Lookup("database-url"))
+func initConfig(*cobra.Command, []string) error {
+	err := config.ReadInConfig()
+	if err != nil {
+		return err
+	}
+	serverConfig.Listen.Port = config.GetInt("listen.port")
+	serverConfig.Listen.Host = config.GetString("listen.host")
+	serverConfig.Database.URL = config.GetString("database.url")
+	return nil
 }
 
-func getServerAddress() string {
-	addr := serverHTTPHost + ":" + strconv.FormatInt(int64(serverHTTPPort), 10)
-	return addr
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+func init() {
+	serverCommand.PersistentFlags().Int("http-port", 8080, "The port to listen on")
+	serverCommand.PersistentFlags().String("http-host", "127.0.0.1", "The host to listen on")
+	serverCommand.PersistentFlags().String("database", "", "The host to listen on")
+
+	config = viper.New()
+
+	must(config.BindPFlag("listen.port", serverCommand.PersistentFlags().Lookup("http-port")))
+	must(config.BindPFlag("listen.host", serverCommand.PersistentFlags().Lookup("http-host")))
+	must(config.BindPFlag("database.url", serverCommand.PersistentFlags().Lookup("database")))
+	config.SetConfigName("ruckd")
+	config.AddConfigPath(".")
+	config.AddConfigPath("/etc/ruckd")
+
+	serverCommand.MarkFlagRequired("database")
 }
 
 func securelySeed() {
@@ -79,7 +101,7 @@ func runServer(*cobra.Command, []string) error {
 		Verifier: &handlers.JwtTokenVerifier{KeySet: keyset},
 	}
 
-	client, err := mongo.NewClient(options.Client().ApplyURI(databaseURL))
+	client, err := mongo.NewClient(options.Client().ApplyURI(serverConfig.Database.URL))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -88,10 +110,10 @@ func runServer(*cobra.Command, []string) error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	db := client.Database("wedo")
+	db := client.Database("ruck")
 	handlers.SetDB(db)
 
-	addr := getServerAddress()
+	addr := serverConfig.Listen.GetServerAddress()
 	log.Printf("Starting server at %s\n", addr)
 	router := mux.NewRouter()
 	router.HandleFunc("/login", handlers.LoginUser).Methods("POST")

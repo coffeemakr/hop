@@ -1,6 +1,6 @@
 DESTDIR=dist
 BINARY=$(DESTDIR)/ruck
-
+LDFLAGS=-s -w
 MAIN=app/ruck.go
 SOURCES+=$(wildcard cmd/*.go) $(wildcard ../*.go)
 
@@ -8,4 +8,4 @@ SOURCES+=$(wildcard cmd/*.go) $(wildcard ../*.go)
 all: $(BINARY)
 
 $(BINARY): $(MAIN) $(SOURCES)
-	go build -o $@  $< 
+	go build -ldflags "$(LDFLAGS)" -o $@  $< 
