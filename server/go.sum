@@ -12,6 +12,8 @@ github.com/coffeemakr/go-http-error v1.0.0 h1:Kx6eH7Hd984mB4V8BQBVnephSa5yHIPTr6
 github.com/coffeemakr/go-http-error v1.0.0/go.mod h1:J2KdWia4eBl8YLu1fyl0YLj6xxIikpYyVaou2yya0rA=
 github.com/coffeemakr/go-http-error v1.3.0 h1:tH+esd+Ys1jymtXRJqsxhx8/gf4an4I21/I+5Yp5A4k=
 github.com/coffeemakr/go-http-error v1.3.0/go.mod h1:J2KdWia4eBl8YLu1fyl0YLj6xxIikpYyVaou2yya0rA=
+github.com/coffeemakr/go-http-error v1.5.0 h1:R60cwOKLCDVo3YhXMGlOOKN39m7G4+SJOS98Rblly2s=
+github.com/coffeemakr/go-http-error v1.5.0/go.mod h1:J2KdWia4eBl8YLu1fyl0YLj6xxIikpYyVaou2yya0rA=
 github.com/coreos/bbolt v1.3.2/go.mod h1:iRUV2dpdMOn7Bo10OQBFzIJO9kkE559Wcmn+qkEiiKk=
 github.com/coreos/etcd v3.3.10+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=
 github.com/coreos/etcd v3.3.13+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=
