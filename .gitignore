@@ -23,3 +23,8 @@ vendor/
 # build directories
 dist/
 build/
+
+*.log
+debian/.debhelper
+debian/debhelper-build-stamp
+debian/ruck-server
