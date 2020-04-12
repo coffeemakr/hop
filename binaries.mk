@@ -6,8 +6,8 @@ ARM_DISTDIR=$(ARM_BUILDDIR)/dist
 ARM_BINARY=$(addprefix $(ARM_BUILDDIR)/,$(BINARY))
 
 AMD64_BUILDDIR=$(BUILDIR)/amd64
-AMD64_DISTDIR=$(ARM_BUILDDIR)/dist
-AMD64_BINARY=$(addprefix $(ARM_BUILDDIR)/,$(BINARY))
+AMD64_DISTDIR=$(AMD64_BUILDDIR)/dist
+AMD64_BINARY=$(addprefix $(AMD64_BUILDDIR)/,$(BINARY))
 
 INSTALLED=$(DESTDIR)$(prefix)/bin/ruckd
 
@@ -24,7 +24,7 @@ $(BINARY): $(MAIN) $(SOURCES)
 	$(GO) -o $@  $< 
 
 $(ARM_BINARY): $(MAIN) $(SOURCES)
-	GOARM=7 GOARCH=arm $(GO) -o $@  $< 
+	CGO_ENABLED=0 GOOS=linux GOARM=7 GOARCH=arm $(GO) -o $@  $< 
 
 $(AMD64_BINARY): $(MAIN) $(SOURCES)
 	GOARCH=amd64 $(GO) -o $@  $< 
@@ -37,8 +37,3 @@ clean:
 install: $(BINARY)
 	install -D $< $(DESTDIR)$(prefix)/bin/ruckd
 
-arm_install: $(ARM_BINARY)
-	install -D $< $(DESTDIR)$(prefix)/bin/ruckd
-
-amd64_install: $(AMD64_BINARY)
-	install -D $< $(DESTDIR)$(prefix)/bin/ruckd
