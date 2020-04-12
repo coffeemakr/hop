@@ -28,6 +28,7 @@ var (
 	serverConfig   = server.Configuration{
 		Listen:   &server.ListenConfig{},
 		Database: &server.DatabaseConfig{},
+		Auth:     &server.AuthenticationConfig{},
 	}
 	authenticator *handlers.Authenticator
 	config        *viper.Viper
@@ -46,6 +47,7 @@ func initConfig(*cobra.Command, []string) error {
 	serverConfig.Listen.Port = config.GetInt("listen.port")
 	serverConfig.Listen.Host = config.GetString("listen.host")
 	serverConfig.Database.URL = config.GetString("database.url")
+	serverConfig.Auth.Key = config.GetString("auth.key")
 	return nil
 }
 
@@ -59,12 +61,14 @@ func init() {
 	serverCommand.PersistentFlags().Int("http-port", 8080, "The port to listen on")
 	serverCommand.PersistentFlags().String("http-host", "127.0.0.1", "The host to listen on")
 	serverCommand.PersistentFlags().String("database", "", "The host to listen on")
+	serverCommand.PersistentFlags().String("auth-key", "", "The host to listen on")
 
 	config = viper.New()
 
 	must(config.BindPFlag("listen.port", serverCommand.PersistentFlags().Lookup("http-port")))
 	must(config.BindPFlag("listen.host", serverCommand.PersistentFlags().Lookup("http-host")))
 	must(config.BindPFlag("database.url", serverCommand.PersistentFlags().Lookup("database")))
+	must(config.BindPFlag("auth.key", serverCommand.PersistentFlags().Lookup("auth-key")))
 	config.SetConfigName("ruckd")
 	config.AddConfigPath(".")
 	config.AddConfigPath("/etc/ruckd")
@@ -85,7 +89,7 @@ func runServer(*cobra.Command, []string) error {
 
 	securelySeed()
 
-	key, err := loadPrivateKey()
+	key, err := loadPrivateKey(serverConfig.Auth.Key)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -137,9 +141,9 @@ func runServer(*cobra.Command, []string) error {
 	return http.ListenAndServe(addr, router)
 }
 
-func loadPrivateKey() (*jose.JSONWebKey, error) {
+func loadPrivateKey(filename string) (*jose.JSONWebKey, error) {
 	var key jose.JSONWebKey
-	fp, err := os.Open(jwkName)
+	fp, err := os.Open(filename)
 	if err != nil {
 		return nil, err
 	}
