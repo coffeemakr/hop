@@ -1,17 +1,20 @@
 DESTDIR=$(abspath ./dist)
-SERVER=$(DESTDIR)/ruckd
-CLI=$(DESTDIR)/ruck
-BINARIES=$(SERVER) $(CLI)
-.PHONY: all server cli
-
+export DESTDIR
+export prefix
 all: server cli
 
 
 clean:
 	rm -f $(BINARIES)
+	$(MAKE) -C cli $@
+	$(MAKE) -C server $@
 
 server:
 	$(MAKE) "DESTDIR=$(DESTDIR)" -C server
 
 cli:
 	$(MAKE) "DESTDIR=$(DESTDIR)" -C cli
+
+%:
+	$(MAKE) -C cli $@
+	$(MAKE) -C server $@

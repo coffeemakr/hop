@@ -1,0 +1,12 @@
+Source: ruck-server
+Maintainer: Coffeemakr <git@unstable.ch>
+Section: misc
+Priority: optional
+Standards-Version: 3.9.2
+Build-Depends: debhelper (>= 9)
+
+Package: ruck-server
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: greet user
+ hithere greets the user, or the world.
