@@ -6,9 +6,10 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 
+	"github.com/coffeemakr/ruck/cli"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var rootCommand = &cobra.Command{
@@ -16,33 +17,29 @@ var rootCommand = &cobra.Command{
 }
 
 var (
-	client   *Client
-	proxyStr = "http://localhost:9090"
-	baseUrl  = "http://localhost:8080"
+	client   *cli.Client
+	proxyStr string
 )
 
 func init() {
-	rootCommand.AddCommand(loginCommand, registerCommand, completionCommand, groupCommand, taskCommand)
+	rootCommand.AddCommand(loginCommand, registerCommand, completionCommand, groupCommand, taskCommand, configCommand)
 	rootCommand.PersistentFlags().StringVar(&proxyStr, "proxy", "", "Proxy URL (e.g. http://localhost:8080)")
 }
 
 func Execute() {
-	viper.SetConfigName("ruck-config")
-	viper.AddConfigPath("$HOME/.config")
-	err := viper.ReadInConfig()
+	config, err := cli.LoadConfig()
 	if err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			// Config file not found; ignore error if desired
-		} else {
-			fmt.Println(err)
-			os.Exit(2)
-		}
+		log.Fatalln(err)
+	}
+
+	if proxyStr != "" {
+		config.Proxy = proxyStr
 	}
 
 	var transport http.RoundTripper = http.DefaultClient.Transport
 
-	if proxyStr != "" {
-		proxyURL, err := url.Parse(proxyStr)
+	if config.Proxy != "" {
+		proxyURL, err := url.Parse(config.Proxy)
 		if err != nil {
 			log.Println(err)
 		}
@@ -51,12 +48,21 @@ func Execute() {
 		}
 	}
 
-	client = &Client{
-		BaseUrl: baseUrl,
+	tokenStore, err := cli.NewFileTokenStore()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	if strings.HasSuffix(config.BaseURL, "/") {
+		config.BaseURL = config.BaseURL[:len(config.BaseURL)-1]
+	}
+
+	client = &cli.Client{
+		Configuration: config,
 		Client: &http.Client{
 			Transport: transport,
 		},
-		TokenStore: NewFileTokenStore(os.ExpandEnv("$HOME/.ruck-cred.txt")),
+		TokenStore: tokenStore,
 	}
 
 	if err := rootCommand.Execute(); err != nil {

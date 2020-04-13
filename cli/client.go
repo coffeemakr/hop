@@ -1,4 +1,4 @@
-package cmd
+package cli
 
 import (
 	"bytes"
@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
 	"path"
 
 	"github.com/coffeemakr/ruck"
@@ -20,55 +19,15 @@ var (
 	ErrNotFound     = errors.New("item not found")
 )
 
-type TokenStore interface {
-	SaveToken(token string) error
-	GetToken() (string, error)
-}
-
-type fileTokenStore struct {
-	Path string
-}
-
-func NewFileTokenStore(path string) TokenStore {
-	return &fileTokenStore{Path: path}
-}
-
-func (s *fileTokenStore) SaveToken(token string) error {
-	file, err := os.Create(s.Path)
-	if err != nil {
-		return err
-	}
-	_, err = file.WriteString(token)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *fileTokenStore) GetToken() (string, error) {
-	file, err := os.Open(s.Path)
-	if err != nil {
-		if err == os.ErrNotExist {
-			err = ErrNoTokenSaved
-		}
-		return "", err
-	}
-	token, err := ioutil.ReadAll(file)
-	if err != nil {
-		return "", err
-	}
-	return string(token[:]), nil
-}
-
 type Client struct {
-	BaseUrl    string
-	Client     *http.Client
-	TokenStore TokenStore
-	token      string
+	Configuration *ClientConfiguration
+	Client        *http.Client
+	TokenStore    TokenStore
+	token         string
 }
 
 func (c *Client) getUrl(relativeUrl string) string {
-	return c.BaseUrl + relativeUrl
+	return c.Configuration.BaseURL + relativeUrl
 }
 
 func (c *Client) newRequest(method string, relativeUrl string, authenticationToken string, body io.Reader) (*http.Request, error) {
@@ -154,7 +113,7 @@ func (c *Client) receiveJsonAuthenticated(method string, relativeUrl string, res
 func (c *Client) sendAndReceiveJson(method string, relativeUrl string, authenticationToken string, body interface{}, result interface{}) error {
 	response, err := c.sendJson(method, relativeUrl, authenticationToken, body)
 	if err != nil {
-		return fmt.Errorf("failed to send JSON: %s", err)
+		return fmt.Errorf("request failed: %s", err)
 	}
 	// Decode response
 	err = json.NewDecoder(response.Body).Decode(result)
@@ -192,19 +151,19 @@ func (c *Client) LoadToken() error {
 	return nil
 }
 
-func (c *Client) CreateGroup(name string) error {
+func (c *Client) CreateGroup(name string) (*ruck.Group, error) {
 	group := ruck.Group{
 		Name: name,
 	}
 	token, err := c.Token()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	err = c.sendAndReceiveJson("POST", "/groups", token, &group, &group)
 	if err != nil {
-		return fmt.Errorf("failed to create group: %s", err)
+		return nil, fmt.Errorf("failed to create group: %s", err)
 	}
-	return nil
+	return &group, nil
 }
 
 func (c *Client) ListGroup() (results []*ruck.Group, err error) {

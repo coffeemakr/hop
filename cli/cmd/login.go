@@ -3,11 +3,12 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"log"
+	"syscall"
+
 	"github.com/coffeemakr/ruck"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh/terminal"
-	"log"
-	"syscall"
 )
 
 var loginCommand = &cobra.Command{

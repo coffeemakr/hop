@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"log"
-	"os"
+
+	"github.com/coffeemakr/ruck/cli"
+	"github.com/spf13/cobra"
 )
 
 var groupCommand = &cobra.Command{
@@ -19,9 +19,9 @@ var groupAddCommand = &cobra.Command{
 }
 
 var groupListCommand = &cobra.Command{
-	Use: "list",
+	Use:     "list",
 	Aliases: []string{"ls"},
-	Run: runListGroup,
+	Run:     runListGroup,
 }
 
 var groupPruneCommand = &cobra.Command{
@@ -30,69 +30,55 @@ var groupPruneCommand = &cobra.Command{
 }
 
 var groupJoinCommand = &cobra.Command{
-	Use: "join",
-	Run: runJoinGroup,
+	Use:  "join",
+	Run:  runJoinGroup,
 	Args: cobra.ExactArgs(1),
 }
 
 var groupSetDefaultCommand = &cobra.Command{
-	Use: "set-default",
-	Run: runSetDefaultGroup,
+	Use:  "set-default",
+	Run:  runSetDefaultGroup,
 	Args: cobra.ExactArgs(1),
 }
 
 var groupGetDefaultCommand = &cobra.Command{
-	Use: "get-default",
-	Run: runGetDefaultGroup,
+	Use:  "get-default",
+	Run:  runGetDefaultGroup,
 	Args: cobra.NoArgs,
 }
 
 func runSetDefaultGroup(cmd *cobra.Command, args []string) {
-	err := setDefaultGroup(args[0])
+	err := setDefaultGroup(client, args[0])
 	if err != nil {
 		log.Fatalln(err)
 	}
 }
 
 func runGetDefaultGroup(cmd *cobra.Command, args []string) {
-	fmt.Printf("Default Group ID: %s\n", getDefaultGroup())
+	fmt.Printf("Default Group ID: %s\n", client.Configuration.Group)
 }
 
-func getDefaultGroup() string {
-	return viper.GetString("default-group")
-}
-
-func viperWriteOrCreateConfig() (err error){
-	const defaultConfigurationFile = "$HOME/.config/ruck-config.yml"
-	path := os.ExpandEnv(defaultConfigurationFile)
-
-	fp, err := os.Create(path)
+func setDefaultGroup(client *cli.Client, groupID string) error {
+	client.Configuration.Group = groupID
+	err := cli.WriteConfig(client.Configuration)
 	if err != nil {
-		return
+		err = fmt.Errorf("failed to set default group: %s", err)
+		return err
 	}
-	err = fp.Close()
-	if err != nil {
-		return
-	}
-	return viper.WriteConfig()
-}
-
-func setDefaultGroup(groupId string) error {
-	viper.Set("default-group", groupId)
-	return viperWriteOrCreateConfig()
+	return nil
 }
 
 func runAddGroup(cmd *cobra.Command, args []string) {
 	groupName := args[0]
-	err := client.CreateGroup(groupName)
+	group, err := client.CreateGroup(groupName)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	defaultGroup := getDefaultGroup()
-	if defaultGroup == "" {
-		err := setDefaultGroup(defaultGroup)
-		err = fmt.Errorf("failed to set default group: %s", err)
-		log.Fatalln(err)
+	if client.Configuration.Group == "" {
+		err := setDefaultGroup(client, group.ID)
+		if err != nil {
+			log.Fatalln(err)
+		}
 	}
 }
 
@@ -105,7 +91,6 @@ func runListGroup(cmd *cobra.Command, args []string) {
 		fmt.Println("No groups.")
 	}
 	for _, group := range groups {
-		setDefaultGroup("")
 		fmt.Printf("Group %s: %s\n", group.ID, group.Name)
 	}
 }
@@ -123,7 +108,6 @@ func runPruneGroup(cmd *cobra.Command, args []string) {
 	}
 }
 
-
 func runJoinGroup(cmd *cobra.Command, args []string) {
 	groupId := args[0]
 	err := client.JoinGroup(groupId)
@@ -131,7 +115,6 @@ func runJoinGroup(cmd *cobra.Command, args []string) {
 		log.Fatalln(err)
 	}
 }
-
 
 func init() {
 	groupCommand.AddCommand(groupAddCommand, groupListCommand, groupPruneCommand, groupJoinCommand, groupSetDefaultCommand, groupGetDefaultCommand)

@@ -3,19 +3,22 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"github.com/coffeemakr/ruck"
-	"github.com/spf13/cobra"
 	"log"
 	"os"
 	"sort"
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/coffeemakr/ruck"
+	"github.com/coffeemakr/ruck/cli"
+	"github.com/spf13/cobra"
 )
 
 var (
 	taskCommand = &cobra.Command{
-		Use: "task",
+		Use:     "task",
+		Aliases: []string{"tasks"},
 	}
 	taskListCommand = &cobra.Command{
 		Use:     "list",
@@ -37,13 +40,12 @@ var (
 	taskAddOptionInterval                                                              uint32
 
 	taskDoneCommand = &cobra.Command{
-		Use:   "complete",
-		Short: "Complete a task",
+		Use:     "complete",
+		Short:   "Complete a task",
 		Aliases: []string{"done"},
-		Run:   runCompleteTask,
-		Args:  cobra.ExactArgs(1),
+		Run:     runCompleteTask,
+		Args:    cobra.ExactArgs(1),
 	}
-
 )
 
 func runTaskGet(cmd *cobra.Command, args []string) {
@@ -145,24 +147,29 @@ func getIntervalUnit() (unit ruck.IntervalUnit, err error) {
 	return
 }
 
+func requireDefaultGroup(client *cli.Client) string {
+	group := client.Configuration.Group
+	if group == "" {
+		fmt.Println("ERROR: Default group not set\n")
+		os.Exit(1)
+	}
+	return group
+}
+
 func runAddTask(cmd *cobra.Command, args []string) {
 	var (
-		defaultGroupId = getDefaultGroup()
-		task           ruck.Task
-		err            error
+		task ruck.Task
+		err  error
 	)
 
 	task.Name = strings.TrimSpace(args[0])
 	task.Interval.Amount = taskAddOptionInterval
 	task.Interval.Unit, err = getIntervalUnit()
-	task.GroupID = defaultGroupId
+	task.GroupID = requireDefaultGroup(client)
+
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
-	}
-
-	if defaultGroupId == "" {
-		log.Fatalln("no default group set")
 	}
 
 	err = client.CreateTask(&task)
